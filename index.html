@@ -419,6 +419,94 @@
     gap: 12px;
   }
 
+  .choice-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+  .choice-card:active { background: var(--card-2); }
+  .choice-card.selected {
+    background: rgba(245, 197, 66, 0.1);
+    border-color: var(--gold);
+  }
+  .choice-icon { font-size: 22px; width: 26px; text-align: center; flex-shrink: 0; }
+  .choice-title { font-size: 15px; font-weight: 700; }
+  .choice-desc { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+  .choice-check {
+    margin-left: auto;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: transparent;
+  }
+  .choice-card.selected .choice-check {
+    border-color: var(--gold);
+    background: var(--gold);
+    color: #1a1400;
+  }
+
+  .segmented {
+    display: flex;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 4px;
+    margin-bottom: 14px;
+  }
+  .segmented button {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .segmented button.selected {
+    background: var(--gold);
+    color: #1a1400;
+  }
+
+  .calc-intro {
+    text-align: center;
+    margin: 4px 0 20px;
+  }
+  .calc-intro .emoji { font-size: 38px; }
+  .calc-intro h3 { font-size: 19px; margin: 10px 0 4px; }
+  .calc-intro p { font-size: 13.5px; color: var(--text-dim); margin: 0; }
+
+  .result-hero {
+    text-align: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px 18px;
+    margin: 10px 0 18px;
+  }
+  .result-hero .kcal-big { font-size: 40px; font-weight: 800; }
+  .result-hero .kcal-big .u { font-size: 16px; color: var(--text-dim); font-weight: 600; margin-left: 4px; }
+  .result-disclaimer {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    text-align: center;
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+
   ::selection { background: var(--gold-dim); color: #000; }
 </style>
 </head>
@@ -488,6 +576,8 @@
       <button class="icon-btn" id="settingsClose" aria-label="Cerrar">✕</button>
     </div>
     <div class="sheet-body">
+      <button class="quick-manual-btn" id="openCalcBtn" style="justify-content:center;">🧮 &nbsp; Calcular mis metas automáticamente</button>
+      <div style="text-align:center;color:var(--text-faint);font-size:12px;margin:16px 0;">o ingresa tus metas manualmente</div>
       <div class="field">
         <label>Calorías (kcal)</label>
         <input class="form-input" type="number" inputmode="numeric" id="goalKcal" min="0">
@@ -508,6 +598,21 @@
       </div>
       <button class="btn-primary" id="saveSettingsBtn">Guardar</button>
     </div>
+  </div>
+</div>
+
+<!-- Sheet: calculadora de metas (estilo cuestionario Fitia) -->
+<div class="overlay" id="calcOverlay">
+  <div class="sheet">
+    <div class="sheet-header">
+      <button class="icon-btn hidden" id="calcBack" aria-label="Atrás">←</button>
+      <h2 id="calcTitle">Calcular metas</h2>
+      <button class="icon-btn" id="calcClose" aria-label="Cerrar">✕</button>
+    </div>
+    <div style="padding: 10px 16px 0;">
+      <div class="progress-bar small"><div class="progress-fill" id="calcProgressFill" style="width:16%"></div></div>
+    </div>
+    <div class="sheet-body" id="calcBody"></div>
   </div>
 </div>
 
@@ -599,6 +704,7 @@ const FOODS = [
 // ---------- Config / storage ----------
 const STORAGE_SETTINGS = 'ft.settings.v1';
 const STORAGE_DIARY = 'ft.diary.v1';
+const STORAGE_PROFILE = 'ft.profile.v1';
 const DEFAULT_GOALS = { kcal: 2000, protein: 150, carbs: 200, fat: 65 };
 const MEALS = [
   { key: 'desayuno', label: 'Desayuno' },
@@ -624,6 +730,10 @@ function loadSettings() {
 
 function saveSettings(goals) {
   localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(goals));
+}
+
+function saveProfile(profile) {
+  localStorage.setItem(STORAGE_PROFILE, JSON.stringify(profile));
 }
 
 function loadDiary() {
@@ -1009,10 +1119,298 @@ document.getElementById('saveSettingsBtn').addEventListener('click', () => {
   renderAll();
 });
 
+// ---------- Calculadora de metas (cuestionario tipo Fitia) ----------
+// Metodología: Mifflin-St Jeor (BMR) + factores de actividad del Compendium of
+// Physical Activities (Ainsworth) + proteína por kg según entrenamiento de
+// fuerza (Helms/Morton/Phillips) + grasas ~25% + carbohidratos = resto.
+const calcOverlay = document.getElementById('calcOverlay');
+const calcBody = document.getElementById('calcBody');
+const calcTitle = document.getElementById('calcTitle');
+const calcBack = document.getElementById('calcBack');
+const calcProgressFill = document.getElementById('calcProgressFill');
+let calcState = {};
+
+const ACTIVITY_LEVELS = [
+  { key: 'sedentario', factor: 1.2, icon: '🚫', title: 'No hago ejercicio', desc: 'Poco o nada de actividad física' },
+  { key: 'ligero', factor: 1.375, icon: '🔥', title: '1-2 días por semana', desc: 'Ejercicio ligero' },
+  { key: 'moderado', factor: 1.55, icon: '🔥', title: '3-4 días por semana', desc: 'Ejercicio moderado' },
+  { key: 'activo', factor: 1.725, icon: '🔥', title: '5-6 días por semana', desc: 'Ejercicio intenso' },
+  { key: 'muyactivo', factor: 1.9, icon: '🔥', title: 'Diario', desc: 'Ejercicio muy intenso o trabajo físico' },
+];
+
+function openCalcWizard() {
+  calcState = {};
+  renderCalcObjetivo();
+  showOverlay(calcOverlay);
+}
+function closeCalcWizard() { hideOverlay(calcOverlay); }
+
+function setCalcStep(step, total, title, showBack) {
+  calcTitle.textContent = title;
+  calcProgressFill.style.width = Math.round((step / total) * 100) + '%';
+  calcBack.classList.toggle('hidden', !showBack);
+}
+
+document.getElementById('openCalcBtn').addEventListener('click', () => {
+  hideOverlay(settingsOverlay);
+  openCalcWizard();
+});
+calcBack.addEventListener('click', () => { if (calcBack.onclick) calcBack.onclick(); });
+document.getElementById('calcClose').addEventListener('click', () => {
+  hideOverlay(calcOverlay);
+  if (!loadSettings()) openSettings();
+});
+calcOverlay.addEventListener('click', (e) => {
+  if (e.target === calcOverlay && loadSettings()) hideOverlay(calcOverlay);
+});
+
+function renderChoiceCards(options, selectedKey, onPick) {
+  const wrap = document.createElement('div');
+  options.forEach(opt => {
+    const card = document.createElement('div');
+    card.className = 'choice-card' + (opt.key === selectedKey ? ' selected' : '');
+    card.innerHTML = `
+      <div class="choice-icon">${opt.icon}</div>
+      <div>
+        <div class="choice-title">${opt.title}</div>
+        ${opt.desc ? `<div class="choice-desc">${opt.desc}</div>` : ''}
+      </div>
+      <div class="choice-check">✓</div>
+    `;
+    card.addEventListener('click', () => onPick(opt));
+    wrap.appendChild(card);
+  });
+  return wrap;
+}
+
+// ---- Paso 1: Objetivo ----
+function renderCalcObjetivo() {
+  setCalcStep(1, 6, '¿Cuál es tu objetivo?', false);
+  calcBody.innerHTML = '';
+  const options = [
+    { key: 'perder', icon: '🔥', title: 'Perder grasa', desc: 'Reduce calorías conservando músculo' },
+    { key: 'ganar', icon: '💪', title: 'Ganar músculo', desc: 'Aumenta peso y fuerza' },
+    { key: 'mantener', icon: '❤️', title: 'Mantener peso', desc: 'Mantén tu peso estable' },
+  ];
+  calcBody.appendChild(renderChoiceCards(options, calcState.objetivo, (opt) => {
+    calcState.objetivo = opt.key;
+    renderCalcDatos();
+  }));
+}
+
+// ---- Paso 2: Sobre ti (sexo, edad, altura, peso) ----
+function renderCalcDatos() {
+  setCalcStep(2, 6, 'Sobre ti', true);
+  calcBack.onclick = renderCalcObjetivo;
+  calcBody.innerHTML = `
+    <div class="segmented" id="sexoSeg">
+      <button type="button" data-val="hombre">Hombre</button>
+      <button type="button" data-val="mujer">Mujer</button>
+    </div>
+    <div class="field">
+      <label>Edad (años)</label>
+      <input class="form-input" type="number" inputmode="numeric" id="calcEdad" min="14" max="90" value="${calcState.edad || ''}">
+    </div>
+    <div class="field">
+      <label>Altura (cm)</label>
+      <input class="form-input" type="number" inputmode="numeric" id="calcAltura" min="120" max="230" value="${calcState.altura || ''}">
+    </div>
+    <div class="field">
+      <label>Peso actual (kg)</label>
+      <input class="form-input" type="number" inputmode="decimal" id="calcPeso" min="30" max="300" value="${calcState.peso || ''}">
+    </div>
+    <button class="btn-primary" id="calcDatosContinuar">Continuar</button>
+  `;
+  const sexoSeg = document.getElementById('sexoSeg');
+  Array.from(sexoSeg.children).forEach(btn => {
+    if (btn.dataset.val === calcState.sexo) btn.classList.add('selected');
+    btn.addEventListener('click', () => {
+      Array.from(sexoSeg.children).forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      calcState.sexo = btn.dataset.val;
+    });
+  });
+  document.getElementById('calcDatosContinuar').addEventListener('click', () => {
+    const edad = parseFloat(document.getElementById('calcEdad').value);
+    const altura = parseFloat(document.getElementById('calcAltura').value);
+    const peso = parseFloat(document.getElementById('calcPeso').value);
+    if (!calcState.sexo || !edad || !altura || !peso) return;
+    calcState.edad = edad; calcState.altura = altura; calcState.peso = peso;
+    renderCalcActividad();
+  });
+}
+
+// ---- Paso 3: Nivel de actividad ----
+function renderCalcActividad() {
+  setCalcStep(3, 6, '¿Cuál es tu nivel de actividad?', true);
+  calcBack.onclick = renderCalcDatos;
+  calcBody.innerHTML = '';
+  calcBody.appendChild(renderChoiceCards(ACTIVITY_LEVELS, calcState.actividadKey, (opt) => {
+    calcState.actividadKey = opt.key;
+    calcState.actividadFactor = opt.factor;
+    renderCalcFuerza();
+  }));
+}
+
+// ---- Paso 4: Entrenamiento de fuerza ----
+function renderCalcFuerza() {
+  setCalcStep(4, 6, '¿Entrenas con pesas?', true);
+  calcBack.onclick = renderCalcActividad;
+  calcBody.innerHTML = '<p style="color:var(--text-dim);font-size:13.5px;margin-top:-6px;">Esta información ayuda a calcular cuánta proteína necesitas.</p>';
+  const options = [
+    { key: true, icon: '🏋️', title: 'Sí', desc: 'Levanto pesas o hago calistenia' },
+    { key: false, icon: '🚶', title: 'No', desc: 'No entreno con resistencia' },
+  ];
+  calcBody.appendChild(renderChoiceCards(options, calcState.fuerza, (opt) => {
+    calcState.fuerza = opt.key;
+    if (calcState.objetivo === 'mantener') {
+      calcState.pesoObjetivo = calcState.peso;
+      calcState.velocidad = 'recomendado';
+      renderCalcResultado();
+    } else {
+      renderCalcPesoObjetivo();
+    }
+  }));
+}
+
+// ---- Paso 5: Peso objetivo y velocidad ----
+function renderCalcPesoObjetivo() {
+  setCalcStep(5, 6, 'Personaliza tu objetivo', true);
+  calcBack.onclick = renderCalcFuerza;
+  const velOptions = calcState.objetivo === 'perder'
+    ? [
+        { key: 'lento', title: 'Lento', desc: '~0.25 kg/semana' },
+        { key: 'recomendado', title: 'Recomendado', desc: '~0.5 kg/semana' },
+        { key: 'rapido', title: 'Rápido', desc: '~0.75 kg/semana' },
+      ]
+    : [
+        { key: 'lento', title: 'Lento', desc: '~0.15 kg/semana' },
+        { key: 'recomendado', title: 'Recomendado', desc: '~0.25 kg/semana' },
+        { key: 'rapido', title: 'Rápido', desc: '~0.5 kg/semana' },
+      ];
+  const selectedVel = calcState.velocidad || 'recomendado';
+
+  calcBody.innerHTML = `
+    <div class="field">
+      <label>Peso objetivo (kg)</label>
+      <input class="form-input" type="number" inputmode="decimal" id="calcPesoObjetivo" min="30" max="300" value="${calcState.pesoObjetivo || calcState.peso}">
+    </div>
+    <label style="display:block;font-size:13px;color:var(--text-dim);font-weight:600;margin:14px 0 8px;">Velocidad</label>
+    <div id="velWrap"></div>
+    <button class="btn-primary" id="calcPesoContinuar">Continuar</button>
+  `;
+  const velWrap = document.getElementById('velWrap');
+  function paintVel(sel) {
+    velWrap.innerHTML = '';
+    velOptions.forEach(opt => {
+      const card = document.createElement('div');
+      card.className = 'choice-card' + (opt.key === sel ? ' selected' : '');
+      card.innerHTML = `
+        <div>
+          <div class="choice-title">${opt.title}</div>
+          <div class="choice-desc">${opt.desc}</div>
+        </div>
+        <div class="choice-check">✓</div>
+      `;
+      card.addEventListener('click', () => { calcState.velocidad = opt.key; paintVel(opt.key); });
+      velWrap.appendChild(card);
+    });
+  }
+  calcState.velocidad = selectedVel;
+  paintVel(selectedVel);
+
+  document.getElementById('calcPesoContinuar').addEventListener('click', () => {
+    const pesoObjetivo = parseFloat(document.getElementById('calcPesoObjetivo').value);
+    if (!pesoObjetivo) return;
+    calcState.pesoObjetivo = pesoObjetivo;
+    renderCalcResultado();
+  });
+}
+
+// ---- Cálculo ----
+function computeGoals(state) {
+  const { sexo, edad, altura, peso, actividadFactor, fuerza, objetivo, velocidad } = state;
+  const bmr = sexo === 'hombre'
+    ? 10 * peso + 6.25 * altura - 5 * edad + 5
+    : 10 * peso + 6.25 * altura - 5 * edad - 161;
+  const tdee = bmr * actividadFactor;
+
+  let delta = 0;
+  if (objetivo === 'perder') {
+    const rate = { lento: 0.25, recomendado: 0.5, rapido: 0.75 }[velocidad];
+    delta = -(rate * 7700 / 7);
+  } else if (objetivo === 'ganar') {
+    const rate = { lento: 0.15, recomendado: 0.25, rapido: 0.5 }[velocidad];
+    delta = rate * 7700 / 7;
+  }
+
+  const floor = sexo === 'hombre' ? 1500 : 1200;
+  const kcal = Math.round(Math.max(tdee + delta, floor));
+
+  const proteinPerKg = fuerza ? 2.0 : 1.4;
+  const protein = proteinPerKg * peso;
+  const fat = Math.max(0.25 * kcal / 9, 0.6 * peso);
+  let carbs = (kcal - protein * 4 - fat * 9) / 4;
+  if (carbs < 0) carbs = 0;
+
+  return {
+    kcal,
+    protein: Math.round(protein),
+    carbs: Math.round(carbs),
+    fat: Math.round(fat),
+  };
+}
+
+// ---- Paso 6: Resultado ----
+function renderCalcResultado() {
+  setCalcStep(6, 6, 'Tus metas diarias', true);
+  calcBack.onclick = (calcState.objetivo === 'mantener') ? renderCalcFuerza : renderCalcPesoObjetivo;
+
+  const result = computeGoals(calcState);
+  calcBody.innerHTML = `
+    <div class="calc-intro" style="margin-top:0;">
+      <div class="emoji">✅</div>
+      <h3>¡Listo! Estas son tus metas</h3>
+      <p>Basadas en tus datos y tu objetivo</p>
+    </div>
+    <div class="result-hero">
+      <div class="kcal-big">${result.kcal}<span class="u">kcal / día</span></div>
+      <div class="macros-row" style="margin-top:18px;">
+        <div class="macro">
+          <div class="macro-label">Proteína</div>
+          <div class="macro-value">${result.protein}g</div>
+        </div>
+        <div class="macro">
+          <div class="macro-label">Carbos</div>
+          <div class="macro-value">${result.carbs}g</div>
+        </div>
+        <div class="macro">
+          <div class="macro-label">Grasas</div>
+          <div class="macro-value">${result.fat}g</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-primary" id="useResultBtn">Usar estas metas</button>
+    <div class="result-disclaimer">
+      Calculado con la fórmula Mifflin-St Jeor, factores de actividad estándar y
+      recomendaciones de proteína basadas en evidencia científica deportiva.
+      Es un estimado — ajústalo luego si lo necesitas. Esto no reemplaza el consejo
+      de un nutricionista o médico.
+    </div>
+  `;
+  document.getElementById('useResultBtn').addEventListener('click', () => {
+    goals = result;
+    saveSettings(goals);
+    saveProfile(calcState);
+    hideOverlay(calcOverlay);
+    renderAll();
+  });
+}
+
 // ---------- Init ----------
 renderAll();
 if (!loadSettings()) {
-  openSettings();
+  openCalcWizard();
 }
 
 // ---------- Service worker ----------
