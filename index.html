@@ -1674,12 +1674,22 @@ function computeGoals(state) {
     delta = rate * 7700 / 7;
   }
 
-  const floor = sexo === 'hombre' ? 1500 : 1200;
+  const floor = sexo === 'hombre' ? 1400 : 1200;
   const kcal = Math.round(Math.max(tdee + delta, floor));
 
-  const proteinPerKg = fuerza ? 2.0 : 1.4;
+  // Proteína por kg según objetivo Y entrenamiento: en déficit (perder) se
+  // sube la proteína para proteger masa muscular (Helms et al.), en
+  // superávit (ganar) se modera un poco. Sin entrenamiento de fuerza baja
+  // un escalón en los tres casos.
+  const proteinTable = {
+    perder:   fuerza ? 2.2 : 1.6,
+    mantener: fuerza ? 1.8 : 1.2,
+    ganar:    fuerza ? 2.0 : 1.4,
+  };
+  const proteinPerKg = proteinTable[objetivo];
   const protein = proteinPerKg * peso;
-  const fat = Math.max(0.25 * kcal / 9, 0.6 * peso);
+  const fatPct = objetivo === 'ganar' ? 0.30 : 0.25;
+  const fat = Math.max(fatPct * kcal / 9, 0.6 * peso);
   let carbs = (kcal - protein * 4 - fat * 9) / 4;
   if (carbs < 0) carbs = 0;
 
