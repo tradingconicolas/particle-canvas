@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mi-nutricion-v1';
+const CACHE_NAME = 'mi-nutricion-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -28,6 +28,15 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  // Peticiones a otros orígenes (ej. la búsqueda en línea de Open Food
+  // Facts) van directo a la red, sin cachear: son datos en vivo, no
+  // parte de la app, y no deben quedar "pegados" en caché.
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {

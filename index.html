@@ -1239,24 +1239,94 @@ function renderSearchView() {
     <input type="text" class="search-input" id="foodSearchInput" placeholder="Buscar alimentos..." autocomplete="off">
     <button class="quick-manual-btn" id="manualEntryBtn">✏️ &nbsp; Ingreso manual (calorías y macros)</button>
     <div id="searchResults"></div>
+    <div id="onlineSearchWrap"></div>
+    <div id="onlineResults"></div>
   `;
 
   const input = document.getElementById('foodSearchInput');
   const resultsEl = document.getElementById('searchResults');
+  const onlineWrap = document.getElementById('onlineSearchWrap');
+  const onlineResultsEl = document.getElementById('onlineResults');
 
   function doSearch() {
-    const q = normalize(input.value.trim());
+    const raw = input.value.trim();
+    const q = normalize(raw);
     let list = FOODS;
     if (q.length > 0) {
       list = FOODS.filter(f => normalize(f.name).includes(q));
     }
     renderResults(list, resultsEl, q.length > 0);
+
+    onlineResultsEl.innerHTML = '';
+    if (raw.length >= 2) {
+      onlineWrap.innerHTML = `<button class="quick-manual-btn" id="onlineSearchBtn">🌐 &nbsp; Buscar "${escapeHtml(raw)}" en línea (Open Food Facts)</button>`;
+      document.getElementById('onlineSearchBtn').addEventListener('click', () => runOnlineSearch(raw, onlineResultsEl));
+    } else {
+      onlineWrap.innerHTML = '';
+    }
   }
 
   input.addEventListener('input', doSearch);
   document.getElementById('manualEntryBtn').addEventListener('click', renderManualView);
   doSearch();
   setTimeout(() => input.focus(), 250);
+}
+
+// ---- Búsqueda en línea (Open Food Facts, gratis / open data) ----
+// Solo se activa si el usuario lo pide explícitamente (botón), y solo
+// cuando hay internet. La base local sigue funcionando 100% offline.
+async function searchOpenFoodFacts(query) {
+  // Endpoint verificado con CORS habilitado (access-control-allow-origin: *)
+  // para que funcione desde el navegador sin backend propio. Ordenado por
+  // popularidad (unique_scans_n) para que los productos reales más
+  // escaneados salgan primero en vez de coincidencias aleatorias.
+  const params = new URLSearchParams({
+    search_terms: query,
+    search_simple: '1',
+    action: 'process',
+    json: '1',
+    page_size: '20',
+    sort_by: 'unique_scans_n',
+    fields: 'product_name,product_name_es,brands,nutriments',
+  });
+  const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?${params}`);
+  if (!res.ok) throw new Error('OFF request failed: ' + res.status);
+  const data = await res.json();
+  return (data.products || [])
+    .map(p => {
+      const n = p.nutriments || {};
+      const kcal = n['energy-kcal_100g'] ?? n['energy-kcal'];
+      const name = p.product_name_es || p.product_name;
+      const brand = Array.isArray(p.brands) ? p.brands[0] : p.brands;
+      return { name, brand, kcal, n };
+    })
+    .filter(p => p.name && p.kcal != null && p.kcal > 0)
+    .slice(0, 15)
+    .map(p => {
+      const brandTxt = p.brand ? ` (${p.brand.split(',')[0].trim()})` : '';
+      return {
+        name: p.name + brandTxt,
+        cat: 'Open Food Facts',
+        kcal: Math.round(p.kcal),
+        protein: round1(p.n.proteins_100g || 0),
+        carbs: round1(p.n.carbohydrates_100g || 0),
+        fat: round1(p.n.fat_100g || 0),
+      };
+    });
+}
+
+async function runOnlineSearch(query, container) {
+  container.innerHTML = `<div class="empty-state">Buscando en línea...</div>`;
+  try {
+    const products = await searchOpenFoodFacts(query);
+    if (products.length === 0) {
+      container.innerHTML = `<div class="empty-state">Sin resultados en línea para "${escapeHtml(query)}".</div>`;
+      return;
+    }
+    renderResults(products, container, true);
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state">No se pudo conectar (sin internet, o el servicio está ocupado — intenta de nuevo en un momento).<br>Puedes seguir usando la base local o "Ingreso manual".</div>`;
+  }
 }
 
 function renderResults(list, container, isFiltered) {
