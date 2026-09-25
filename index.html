@@ -576,7 +576,9 @@
       <button class="icon-btn" id="settingsClose" aria-label="Cerrar">✕</button>
     </div>
     <div class="sheet-body">
-      <button class="quick-manual-btn" id="openCalcBtn" style="justify-content:center;">🧮 &nbsp; Calcular mis metas automáticamente</button>
+      <label style="display:block;font-size:13px;color:var(--text-dim);font-weight:600;margin-bottom:8px;">Estructura de comidas</label>
+      <div id="mealStructureWrap"></div>
+      <button class="quick-manual-btn" id="openCalcBtn" style="justify-content:center;margin-top:18px;">🧮 &nbsp; Calcular mis metas automáticamente</button>
       <div style="text-align:center;color:var(--text-faint);font-size:12px;margin:16px 0;">o ingresa tus metas manualmente</div>
       <div class="field">
         <label>Calorías (kcal)</label>
@@ -705,13 +707,31 @@ const FOODS = [
 const STORAGE_SETTINGS = 'ft.settings.v1';
 const STORAGE_DIARY = 'ft.diary.v1';
 const STORAGE_PROFILE = 'ft.profile.v1';
+const STORAGE_MEAL_STRUCTURE = 'ft.mealStructure.v1';
 const DEFAULT_GOALS = { kcal: 2000, protein: 150, carbs: 200, fat: 65 };
-const MEALS = [
-  { key: 'desayuno', label: 'Desayuno' },
-  { key: 'almuerzo', label: 'Almuerzo' },
-  { key: 'cena', label: 'Cena' },
-  { key: 'snacks', label: 'Snacks' },
-];
+
+// Estructuras de comidas disponibles. OMAD (One Meal A Day) usa una sola
+// sección; tus metas de calorías/macros se aplican igual sobre esa comida.
+const MEAL_STRUCTURES = {
+  classic: [
+    { key: 'desayuno', label: 'Desayuno' },
+    { key: 'almuerzo', label: 'Almuerzo' },
+    { key: 'cena', label: 'Cena' },
+    { key: 'snacks', label: 'Snacks' },
+  ],
+  omad: [
+    { key: 'omad', label: 'OMAD · Tu única comida' },
+  ],
+};
+const ALL_MEAL_LABELS = { desayuno: 'Desayuno', almuerzo: 'Almuerzo', cena: 'Cena', snacks: 'Snacks', omad: 'OMAD' };
+const ALL_MEAL_KEYS = Object.keys(ALL_MEAL_LABELS);
+
+function loadMealStructure() {
+  const v = localStorage.getItem(STORAGE_MEAL_STRUCTURE);
+  return v === 'omad' ? 'omad' : 'classic';
+}
+function saveMealStructure(v) { localStorage.setItem(STORAGE_MEAL_STRUCTURE, v); }
+function getCurrentMeals() { return MEAL_STRUCTURES[mealStructure]; }
 
 function todayKey() {
   const d = new Date();
@@ -747,13 +767,17 @@ function saveDiary(diary) {
   localStorage.setItem(STORAGE_DIARY, JSON.stringify(diary));
 }
 
+function ensureMealKeys(entries) {
+  ALL_MEAL_KEYS.forEach(k => { if (!entries[k]) entries[k] = []; });
+  return entries;
+}
+
 function getTodayEntries() {
   const diary = loadDiary();
   const key = todayKey();
-  if (!diary[key]) {
-    diary[key] = { desayuno: [], almuerzo: [], cena: [], snacks: [] };
-    saveDiary(diary);
-  }
+  if (!diary[key]) diary[key] = {};
+  ensureMealKeys(diary[key]);
+  saveDiary(diary);
   return diary[key];
 }
 
@@ -770,6 +794,7 @@ function round1(n) { return Math.round(n * 10) / 10; }
 
 // ---------- State ----------
 let goals = loadSettings() || { ...DEFAULT_GOALS };
+let mealStructure = loadMealStructure();
 let currentSheetMeal = null;
 let currentSelectedFood = null;
 
@@ -784,8 +809,8 @@ function renderDate() {
 function renderSummary() {
   const entries = getTodayEntries();
   let kcal = 0, protein = 0, carbs = 0, fat = 0;
-  MEALS.forEach(m => {
-    entries[m.key].forEach(item => {
+  ALL_MEAL_KEYS.forEach(k => {
+    entries[k].forEach(item => {
       kcal += item.kcal; protein += item.protein; carbs += item.carbs; fat += item.fat;
     });
   });
@@ -814,46 +839,58 @@ function setFill(id, value, goal) {
 }
 
 // ---------- Render: meals ----------
+function renderMealCard(key, label, items) {
+  const subtotal = Math.round(items.reduce((sum, i) => sum + i.kcal, 0));
+
+  const card = document.createElement('div');
+  card.className = 'meal-card';
+
+  const header = document.createElement('div');
+  header.className = 'meal-header';
+  header.innerHTML = `<h3>${label}</h3><span class="meal-kcal">${subtotal} kcal</span>`;
+  card.appendChild(header);
+
+  const itemsWrap = document.createElement('div');
+  itemsWrap.className = 'meal-items';
+  items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'food-item';
+    row.innerHTML = `
+      <div>
+        <div class="food-item-name">${escapeHtml(item.name)}</div>
+        <div class="food-item-detail">${item.grams ? item.grams + ' g · ' : ''}${Math.round(item.kcal)} kcal · P${round1(item.protein)} C${round1(item.carbs)} G${round1(item.fat)}</div>
+      </div>
+      <button class="delete-btn" data-meal="${key}" data-id="${item.id}" aria-label="Eliminar">✕</button>
+    `;
+    itemsWrap.appendChild(row);
+  });
+  card.appendChild(itemsWrap);
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-food-btn';
+  addBtn.textContent = '+ Agregar alimento';
+  addBtn.dataset.meal = key;
+  card.appendChild(addBtn);
+
+  return card;
+}
+
 function renderMeals() {
   const entries = getTodayEntries();
   const container = document.getElementById('mealsContainer');
   container.innerHTML = '';
 
-  MEALS.forEach(meal => {
-    const items = entries[meal.key];
-    const subtotal = Math.round(items.reduce((sum, i) => sum + i.kcal, 0));
+  const currentMeals = getCurrentMeals();
+  currentMeals.forEach(meal => {
+    container.appendChild(renderMealCard(meal.key, meal.label, entries[meal.key]));
+  });
 
-    const card = document.createElement('div');
-    card.className = 'meal-card';
-
-    const header = document.createElement('div');
-    header.className = 'meal-header';
-    header.innerHTML = `<h3>${meal.label}</h3><span class="meal-kcal">${subtotal} kcal</span>`;
-    card.appendChild(header);
-
-    const itemsWrap = document.createElement('div');
-    itemsWrap.className = 'meal-items';
-    items.forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'food-item';
-      row.innerHTML = `
-        <div>
-          <div class="food-item-name">${escapeHtml(item.name)}</div>
-          <div class="food-item-detail">${item.grams ? item.grams + ' g · ' : ''}${Math.round(item.kcal)} kcal · P${round1(item.protein)} C${round1(item.carbs)} G${round1(item.fat)}</div>
-        </div>
-        <button class="delete-btn" data-meal="${meal.key}" data-id="${item.id}" aria-label="Eliminar">✕</button>
-      `;
-      itemsWrap.appendChild(row);
-    });
-    card.appendChild(itemsWrap);
-
-    const addBtn = document.createElement('button');
-    addBtn.className = 'add-food-btn';
-    addBtn.textContent = '+ Agregar alimento';
-    addBtn.dataset.meal = meal.key;
-    card.appendChild(addBtn);
-
-    container.appendChild(card);
+  // Si quedaron ítems registrados bajo otra estructura (ej. cambiaste de
+  // Clásico a OMAD a mitad del día), se siguen mostrando aquí para que el
+  // total de calorías nunca quede "oculto".
+  const currentKeys = currentMeals.map(m => m.key);
+  ALL_MEAL_KEYS.filter(k => !currentKeys.includes(k) && entries[k].length > 0).forEach(k => {
+    container.appendChild(renderMealCard(k, ALL_MEAL_LABELS[k], entries[k]));
   });
 }
 
@@ -896,8 +933,7 @@ const sheetBack = document.getElementById('sheetBack');
 
 function openSheet(mealKey) {
   currentSheetMeal = mealKey;
-  const mealLabel = MEALS.find(m => m.key === mealKey).label;
-  sheetTitle.textContent = `Agregar a ${mealLabel}`;
+  sheetTitle.textContent = `Agregar a ${ALL_MEAL_LABELS[mealKey]}`;
   sheetBack.classList.add('hidden');
   renderSearchView();
   showOverlay(sheetOverlay);
@@ -924,7 +960,7 @@ function hideOverlay(el) {
 // ---- Search view ----
 function renderSearchView() {
   sheetBack.classList.add('hidden');
-  sheetTitle.textContent = `Agregar a ${MEALS.find(m => m.key === currentSheetMeal).label}`;
+  sheetTitle.textContent = `Agregar a ${ALL_MEAL_LABELS[currentSheetMeal]}`;
   sheetBody.innerHTML = `
     <input type="text" class="search-input" id="foodSearchInput" placeholder="Buscar alimentos..." autocomplete="off">
     <button class="quick-manual-btn" id="manualEntryBtn">✏️ &nbsp; Ingreso manual (calorías y macros)</button>
@@ -1080,7 +1116,8 @@ function renderManualView() {
 function addEntry(entry) {
   const diary = loadDiary();
   const key = todayKey();
-  if (!diary[key]) diary[key] = { desayuno: [], almuerzo: [], cena: [], snacks: [] };
+  if (!diary[key]) diary[key] = {};
+  ensureMealKeys(diary[key]);
   diary[key][currentSheetMeal].push(entry);
   saveDiary(diary);
   closeSheet();
@@ -1090,11 +1127,28 @@ function addEntry(entry) {
 // ---------- Settings ----------
 const settingsOverlay = document.getElementById('settingsOverlay');
 
+const MEAL_STRUCTURE_OPTIONS = [
+  { key: 'classic', icon: '🍽️', title: 'Clásico', desc: 'Desayuno, almuerzo, cena y snacks' },
+  { key: 'omad', icon: '⏱️', title: 'OMAD', desc: '1 comida al día — tus metas se aplican igual sobre esa comida' },
+];
+
+function renderMealStructurePicker() {
+  const wrap = document.getElementById('mealStructureWrap');
+  wrap.innerHTML = '';
+  wrap.appendChild(renderChoiceCards(MEAL_STRUCTURE_OPTIONS, mealStructure, (opt) => {
+    mealStructure = opt.key;
+    saveMealStructure(mealStructure);
+    renderMealStructurePicker();
+    renderMeals();
+  }));
+}
+
 function openSettings() {
   document.getElementById('goalKcal').value = goals.kcal;
   document.getElementById('goalProtein').value = goals.protein;
   document.getElementById('goalCarbs').value = goals.carbs;
   document.getElementById('goalFat').value = goals.fat;
+  renderMealStructurePicker();
   showOverlay(settingsOverlay);
 }
 function closeSettings() { hideOverlay(settingsOverlay); }
