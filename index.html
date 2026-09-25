@@ -2,315 +2,1025 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lienzo de Partículas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>Mi Nutrición</title>
+<meta name="description" content="Registro personal de alimentación diaria">
+<meta name="theme-color" content="#0b0b0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nutrición">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/favicon.png">
 <style>
+  :root {
+    --bg: #0a0a0c;
+    --card: #17171b;
+    --card-2: #1f1f24;
+    --border: #2a2a30;
+    --gold: #f5c542;
+    --gold-dim: #a88a2e;
+    --text: #f5f5f7;
+    --text-dim: #97979d;
+    --text-faint: #616166;
+    --danger: #ff6b6b;
+    --radius-lg: 22px;
+    --radius-md: 16px;
+    --radius-sm: 10px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
   html, body {
     margin: 0;
     padding: 0;
-    overflow: hidden;
-    background: #0b0d17;
-    height: 100%;
-    width: 100%;
-    font-family: system-ui, sans-serif;
-    cursor: crosshair;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
   }
-  canvas {
-    display: block;
+
+  body.no-scroll { overflow: hidden; height: 100%; }
+
+  #app {
+    max-width: 520px;
+    margin: 0 auto;
+    padding-bottom: calc(48px + var(--safe-bottom));
   }
-  #ui {
-    position: fixed;
-    top: 16px;
-    left: 16px;
-    color: #fff;
-    background: rgba(20, 20, 35, 0.6);
-    backdrop-filter: blur(6px);
-    padding: 12px 16px;
-    border-radius: 12px;
-    font-size: 13px;
-    line-height: 1.6;
-    user-select: none;
-    z-index: 10;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  }
-  #ui h1 {
-    font-size: 15px;
-    margin: 0 0 8px 0;
-    font-weight: 600;
-  }
-  #ui label {
+
+  .topbar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin: 4px 0;
+    justify-content: space-between;
+    padding: calc(18px + var(--safe-top)) 20px 8px;
   }
-  #ui select, #ui input[type=range] {
-    accent-color: #7c6cff;
+
+  .topbar h1 {
+    font-size: 30px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.5px;
   }
-  .swatch {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border-radius: 4px;
-    margin-right: 4px;
-    vertical-align: middle;
+
+  .date-sub {
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-top: 2px;
+    text-transform: capitalize;
+  }
+
+  .icon-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
     cursor: pointer;
-    border: 2px solid transparent;
+    flex-shrink: 0;
   }
-  .swatch.active {
-    border-color: #fff;
+  .icon-btn:active { background: var(--card-2); }
+  .icon-btn.hidden { visibility: hidden; }
+
+  main { padding: 10px 16px 20px; }
+
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px 20px 20px;
+    margin-bottom: 18px;
   }
-  #clearBtn {
-    margin-top: 8px;
-    background: rgba(255,255,255,0.1);
+
+  .summary-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2px;
+  }
+
+  .summary-label {
+    color: var(--text-dim);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .kcal-display {
+    text-align: center;
+    margin: 10px 0 14px;
+  }
+  .kcal-display .n1 {
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: -1px;
+  }
+  .kcal-display .sep {
+    font-size: 26px;
+    color: var(--text-faint);
+    margin: 0 4px;
+  }
+  .kcal-display .n2 {
+    font-size: 26px;
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+  .kcal-display .unit {
+    display: block;
+    font-size: 13px;
+    color: var(--text-faint);
+    margin-top: 2px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .progress-bar {
+    width: 100%;
+    background: var(--card-2);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .progress-bar.big { height: 12px; margin-bottom: 20px; }
+  .progress-bar.small { height: 7px; margin-top: 8px; }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+    border-radius: 20px;
+    transition: width 0.35s ease;
+  }
+  .progress-fill.over {
+    background: linear-gradient(90deg, #e05252, var(--danger));
+  }
+
+  .macros-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .macro-label {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+  .macro-value {
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 3px;
+  }
+  .macro-value .goal { color: var(--text-faint); font-weight: 500; }
+
+  .meal-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 16px 14px;
+    margin-bottom: 14px;
+  }
+
+  .meal-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .meal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .meal-kcal {
+    font-size: 14px;
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+
+  .meal-items { margin: 4px 0 10px; }
+
+  .food-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+  }
+  .food-item:last-child { border-bottom: none; }
+
+  .food-item-name {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .food-item-detail {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .delete-btn {
+    background: none;
     border: none;
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 8px;
+    color: var(--text-faint);
+    font-size: 20px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
     cursor: pointer;
-    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  #clearBtn:hover {
-    background: rgba(255,255,255,0.2);
+  .delete-btn:active { background: var(--card-2); color: var(--danger); }
+
+  .add-food-btn {
+    width: 100%;
+    background: var(--card-2);
+    border: 1px dashed var(--border);
+    color: var(--gold);
+    font-size: 15px;
+    font-weight: 700;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
   }
-  #hint {
+  .add-food-btn:active { background: #262629; }
+
+  /* Overlay / Sheet */
+  .overlay {
     position: fixed;
-    bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: rgba(255,255,255,0.4);
-    font-size: 12px;
-    user-select: none;
-    z-index: 10;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
   }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+
+  .sheet {
+    background: var(--bg);
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    border-radius: 24px 24px 0 0;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(.32,.72,0,1);
+    padding-bottom: var(--safe-bottom);
+  }
+  .overlay.open .sheet { transform: translateY(0); }
+
+  .sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .sheet-header h2 {
+    font-size: 17px;
+    margin: 0;
+    font-weight: 700;
+    text-align: center;
+    flex: 1;
+  }
+
+  .sheet-body {
+    padding: 16px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .search-input, .form-input {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 16px;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    outline: none;
+  }
+  .search-input:focus, .form-input:focus { border-color: var(--gold-dim); }
+
+  .quick-manual-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--gold);
+    font-size: 15px;
+    font-weight: 700;
+    padding: 13px 16px;
+    border-radius: var(--radius-md);
+    margin-top: 12px;
+    cursor: pointer;
+  }
+
+  .result-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 4px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    gap: 10px;
+  }
+  .result-item:active { background: var(--card-2); }
+  .result-name { font-size: 15px; font-weight: 600; }
+  .result-detail { font-size: 12.5px; color: var(--text-dim); margin-top: 3px; }
+  .result-cat {
+    font-size: 10.5px;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 700;
+    margin-top: 3px;
+  }
+  .result-arrow { color: var(--text-faint); font-size: 18px; flex-shrink: 0; }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 14px;
+    padding: 40px 10px;
+  }
+
+  .field {
+    margin-bottom: 14px;
+  }
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .qty-food-name {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .qty-food-per100 {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 18px;
+  }
+
+  .qty-preview {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 10px;
+    margin: 16px 0 6px;
+    text-align: center;
+  }
+  .qty-preview .val { font-size: 17px; font-weight: 800; }
+  .qty-preview .lbl { font-size: 11px; color: var(--text-dim); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+  .btn-primary {
+    width: 100%;
+    background: var(--gold);
+    color: #1a1400;
+    border: none;
+    font-size: 16px;
+    font-weight: 800;
+    padding: 15px;
+    border-radius: var(--radius-md);
+    margin-top: 18px;
+    cursor: pointer;
+  }
+  .btn-primary:active { background: var(--gold-dim); }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  ::selection { background: var(--gold-dim); color: #000; }
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
-<div id="ui">
-  <h1>✨ Lienzo de Partículas</h1>
-  <label>Modo:
-    <select id="mode">
-      <option value="burst">Explosión</option>
-      <option value="trail">Estela</option>
-      <option value="fireworks">Fuegos artificiales</option>
-    </select>
-  </label>
-  <label>Gravedad:
-    <input type="range" id="gravity" min="-0.3" max="0.3" step="0.01" value="0.08">
-  </label>
-  <label>Paleta:
-    <span id="palettes"></span>
-  </label>
-  <button id="clearBtn">Limpiar</button>
+
+<div id="app">
+  <header class="topbar">
+    <div>
+      <h1>Hoy</h1>
+      <div class="date-sub" id="dateLabel"></div>
+    </div>
+    <button class="icon-btn" id="settingsBtn" aria-label="Ajustes">⚙️</button>
+  </header>
+
+  <main>
+    <section class="summary-card">
+      <div class="summary-top">
+        <span class="summary-label">Calorías</span>
+      </div>
+      <div class="kcal-display">
+        <span class="n1" id="kcalConsumed">0</span><span class="sep">/</span><span class="n2" id="kcalGoal">2000</span>
+        <span class="unit">kcal</span>
+      </div>
+      <div class="progress-bar big"><div class="progress-fill" id="kcalFill"></div></div>
+
+      <div class="macros-row">
+        <div class="macro">
+          <div class="macro-label">Proteína</div>
+          <div class="macro-value"><span id="proteinConsumed">0</span><span class="goal"> / <span id="proteinGoal">150</span>g</span></div>
+          <div class="progress-bar small"><div class="progress-fill" id="proteinFill"></div></div>
+        </div>
+        <div class="macro">
+          <div class="macro-label">Carbos</div>
+          <div class="macro-value"><span id="carbsConsumed">0</span><span class="goal"> / <span id="carbsGoal">200</span>g</span></div>
+          <div class="progress-bar small"><div class="progress-fill" id="carbsFill"></div></div>
+        </div>
+        <div class="macro">
+          <div class="macro-label">Grasas</div>
+          <div class="macro-value"><span id="fatConsumed">0</span><span class="goal"> / <span id="fatGoal">65</span>g</span></div>
+          <div class="progress-bar small"><div class="progress-fill" id="fatFill"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="mealsContainer"></section>
+  </main>
 </div>
-<div id="hint">Haz clic, arrastra o toca la pantalla — suelta el mouse en "Fuegos artificiales" para lanzar</div>
+
+<!-- Sheet: agregar alimento (búsqueda / cantidad / manual) -->
+<div class="overlay" id="sheetOverlay">
+  <div class="sheet">
+    <div class="sheet-header">
+      <button class="icon-btn hidden" id="sheetBack" aria-label="Atrás">←</button>
+      <h2 id="sheetTitle">Agregar alimento</h2>
+      <button class="icon-btn" id="sheetClose" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </div>
+</div>
+
+<!-- Sheet: ajustes -->
+<div class="overlay" id="settingsOverlay">
+  <div class="sheet">
+    <div class="sheet-header">
+      <div style="width:44px"></div>
+      <h2>Mis metas diarias</h2>
+      <button class="icon-btn" id="settingsClose" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="field">
+        <label>Calorías (kcal)</label>
+        <input class="form-input" type="number" inputmode="numeric" id="goalKcal" min="0">
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Proteína (g)</label>
+          <input class="form-input" type="number" inputmode="numeric" id="goalProtein" min="0">
+        </div>
+        <div class="field">
+          <label>Carbohidratos (g)</label>
+          <input class="form-input" type="number" inputmode="numeric" id="goalCarbs" min="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>Grasas (g)</label>
+        <input class="form-input" type="number" inputmode="numeric" id="goalFat" min="0">
+      </div>
+      <button class="btn-primary" id="saveSettingsBtn">Guardar</button>
+    </div>
+  </div>
+</div>
 
 <script>
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-let W, H;
-function resize() {
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
+// ---------- Base de datos local de alimentos (valores aproximados por 100g) ----------
+const FOODS = [
+  // Proteínas
+  {name:"Pechuga de pollo (sin piel, cocida)", cat:"Proteínas", kcal:165, protein:31, carbs:0, fat:3.6},
+  {name:"Pollo entero con piel (cocido)", cat:"Proteínas", kcal:215, protein:18, carbs:0, fat:15},
+  {name:"Pollo a la brasa (con piel)", cat:"Proteínas", kcal:250, protein:27, carbs:0, fat:16},
+  {name:"Carne de res (lomo, cocida)", cat:"Proteínas", kcal:250, protein:26, carbs:0, fat:15},
+  {name:"Carne molida de res (cocida)", cat:"Proteínas", kcal:254, protein:18, carbs:0, fat:20},
+  {name:"Lomo de cerdo (cocido)", cat:"Proteínas", kcal:242, protein:27, carbs:0, fat:14},
+  {name:"Chicharrón de cerdo", cat:"Proteínas", kcal:350, protein:25, carbs:0, fat:27},
+  {name:"Pescado blanco (bonito, cocido)", cat:"Proteínas", kcal:105, protein:22, carbs:0, fat:1.5},
+  {name:"Atún en agua (lata, escurrido)", cat:"Proteínas", kcal:116, protein:25.5, carbs:0, fat:0.8},
+  {name:"Salmón (cocido)", cat:"Proteínas", kcal:208, protein:20, carbs:0, fat:13},
+  {name:"Huevo entero (cocido)", cat:"Proteínas", kcal:155, protein:13, carbs:1.1, fat:11},
+  {name:"Clara de huevo (cocida)", cat:"Proteínas", kcal:52, protein:11, carbs:0.7, fat:0.2},
+  {name:"Jamón de pavo", cat:"Proteínas", kcal:105, protein:17, carbs:3, fat:2.5},
+  {name:"Anticuchos de corazón", cat:"Platos peruanos", kcal:200, protein:20, carbs:2, fat:12},
+
+  // Carbohidratos
+  {name:"Arroz blanco (cocido)", cat:"Carbohidratos", kcal:130, protein:2.7, carbs:28, fat:0.3},
+  {name:"Arroz integral (cocido)", cat:"Carbohidratos", kcal:123, protein:2.6, carbs:25.6, fat:1},
+  {name:"Papa (cocida)", cat:"Carbohidratos", kcal:87, protein:1.9, carbs:20, fat:0.1},
+  {name:"Papa frita (casera)", cat:"Carbohidratos", kcal:312, protein:3.4, carbs:41, fat:15},
+  {name:"Camote (cocido)", cat:"Carbohidratos", kcal:90, protein:2, carbs:21, fat:0.1},
+  {name:"Yuca (cocida)", cat:"Carbohidratos", kcal:160, protein:1.4, carbs:38, fat:0.3},
+  {name:"Pan blanco", cat:"Carbohidratos", kcal:265, protein:9, carbs:49, fat:3.2},
+  {name:"Pan integral", cat:"Carbohidratos", kcal:247, protein:13, carbs:41, fat:3.4},
+  {name:"Avena (cruda)", cat:"Carbohidratos", kcal:389, protein:16.9, carbs:66, fat:6.9},
+  {name:"Quinua (cocida)", cat:"Carbohidratos", kcal:120, protein:4.4, carbs:21, fat:1.9},
+  {name:"Fideos / tallarín (cocido)", cat:"Carbohidratos", kcal:158, protein:5.8, carbs:31, fat:0.9},
+  {name:"Choclo (maíz, cocido)", cat:"Carbohidratos", kcal:96, protein:3.4, carbs:21, fat:1.5},
+  {name:"Frejoles (cocidos)", cat:"Carbohidratos", kcal:127, protein:8.7, carbs:23, fat:0.5},
+  {name:"Lentejas (cocidas)", cat:"Carbohidratos", kcal:116, protein:9, carbs:20, fat:0.4},
+  {name:"Garbanzos (cocidos)", cat:"Carbohidratos", kcal:164, protein:8.9, carbs:27, fat:2.6},
+
+  // Frutas y verduras
+  {name:"Palta / aguacate", cat:"Frutas y verduras", kcal:160, protein:2, carbs:8.5, fat:14.7},
+  {name:"Plátano", cat:"Frutas y verduras", kcal:89, protein:1.1, carbs:23, fat:0.3},
+  {name:"Manzana", cat:"Frutas y verduras", kcal:52, protein:0.3, carbs:14, fat:0.2},
+  {name:"Naranja", cat:"Frutas y verduras", kcal:47, protein:0.9, carbs:12, fat:0.1},
+  {name:"Piña", cat:"Frutas y verduras", kcal:50, protein:0.5, carbs:13, fat:0.1},
+  {name:"Papaya", cat:"Frutas y verduras", kcal:43, protein:0.5, carbs:11, fat:0.3},
+  {name:"Mango", cat:"Frutas y verduras", kcal:60, protein:0.8, carbs:15, fat:0.4},
+  {name:"Brócoli (cocido)", cat:"Frutas y verduras", kcal:35, protein:2.4, carbs:7, fat:0.4},
+  {name:"Tomate", cat:"Frutas y verduras", kcal:18, protein:0.9, carbs:3.9, fat:0.2},
+  {name:"Cebolla", cat:"Frutas y verduras", kcal:40, protein:1.1, carbs:9.3, fat:0.1},
+  {name:"Zanahoria", cat:"Frutas y verduras", kcal:41, protein:0.9, carbs:10, fat:0.2},
+  {name:"Lechuga", cat:"Frutas y verduras", kcal:15, protein:1.4, carbs:2.9, fat:0.2},
+  {name:"Pepino", cat:"Frutas y verduras", kcal:15, protein:0.7, carbs:3.6, fat:0.1},
+
+  // Lácteos y grasas
+  {name:"Leche entera", cat:"Lácteos y grasas", kcal:61, protein:3.2, carbs:4.8, fat:3.3},
+  {name:"Leche descremada", cat:"Lácteos y grasas", kcal:34, protein:3.4, carbs:5, fat:0.1},
+  {name:"Yogur natural", cat:"Lácteos y grasas", kcal:61, protein:3.5, carbs:4.7, fat:3.3},
+  {name:"Queso fresco", cat:"Lácteos y grasas", kcal:264, protein:18, carbs:3.4, fat:21},
+  {name:"Queso edam / andino", cat:"Lácteos y grasas", kcal:357, protein:25, carbs:1.4, fat:28},
+  {name:"Aceite de oliva", cat:"Lácteos y grasas", kcal:884, protein:0, carbs:0, fat:100},
+  {name:"Mantequilla", cat:"Lácteos y grasas", kcal:717, protein:0.9, carbs:0.1, fat:81},
+  {name:"Almendras", cat:"Lácteos y grasas", kcal:579, protein:21, carbs:22, fat:50},
+  {name:"Maní", cat:"Lácteos y grasas", kcal:567, protein:25.8, carbs:16, fat:49},
+  {name:"Mayonesa", cat:"Lácteos y grasas", kcal:680, protein:1, carbs:3, fat:75},
+
+  // Platos peruanos
+  {name:"Ceviche de pescado", cat:"Platos peruanos", kcal:98, protein:16, carbs:6, fat:1.5},
+  {name:"Lomo saltado", cat:"Platos peruanos", kcal:150, protein:11, carbs:8, fat:9},
+  {name:"Causa limeña (rellena de pollo)", cat:"Platos peruanos", kcal:180, protein:5, carbs:22, fat:8},
+  {name:"Arroz con pollo", cat:"Platos peruanos", kcal:160, protein:9, carbs:18, fat:6},
+  {name:"Ají de gallina", cat:"Platos peruanos", kcal:180, protein:10, carbs:12, fat:11},
+  {name:"Tacu tacu", cat:"Platos peruanos", kcal:160, protein:5, carbs:25, fat:5},
+  {name:"Papa a la huancaína", cat:"Platos peruanos", kcal:170, protein:3, carbs:18, fat:10},
+  {name:"Tallarín saltado", cat:"Platos peruanos", kcal:140, protein:7, carbs:20, fat:4},
+  {name:"Chaufa de pollo", cat:"Platos peruanos", kcal:170, protein:7, carbs:22, fat:6},
+  {name:"Sopa criolla", cat:"Platos peruanos", kcal:90, protein:5, carbs:8, fat:4},
+  {name:"Seco de res", cat:"Platos peruanos", kcal:190, protein:15, carbs:8, fat:11},
+  {name:"Escabeche de pescado", cat:"Platos peruanos", kcal:160, protein:12, carbs:10, fat:8},
+  {name:"Tamal", cat:"Platos peruanos", kcal:220, protein:6, carbs:28, fat:9},
+  {name:"Humita", cat:"Platos peruanos", kcal:180, protein:4, carbs:30, fat:5},
+  {name:"Picarones (con miel)", cat:"Platos peruanos", kcal:290, protein:3, carbs:55, fat:7},
+  {name:"Suspiro a la limeña", cat:"Platos peruanos", kcal:350, protein:4, carbs:55, fat:13},
+  {name:"Mazamorra morada", cat:"Platos peruanos", kcal:120, protein:1, carbs:28, fat:0.3},
+  {name:"Alfajor", cat:"Platos peruanos", kcal:430, protein:5, carbs:60, fat:19},
+  {name:"Chicha morada", cat:"Platos peruanos", kcal:45, protein:0.1, carbs:11, fat:0},
+];
+
+// ---------- Config / storage ----------
+const STORAGE_SETTINGS = 'ft.settings.v1';
+const STORAGE_DIARY = 'ft.diary.v1';
+const DEFAULT_GOALS = { kcal: 2000, protein: 150, carbs: 200, fat: 65 };
+const MEALS = [
+  { key: 'desayuno', label: 'Desayuno' },
+  { key: 'almuerzo', label: 'Almuerzo' },
+  { key: 'cena', label: 'Cena' },
+  { key: 'snacks', label: 'Snacks' },
+];
+
+function todayKey() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
-resize();
-window.addEventListener('resize', resize);
 
-const palettes = {
-  neon: ['#ff5cf1', '#5cf1ff', '#c8ff5c', '#ff9d5c', '#8a5cff'],
-  fire: ['#ff3d00', '#ff8c00', '#ffd400', '#ff5722', '#ffab00'],
-  ocean: ['#00e5ff', '#2979ff', '#00bfa5', '#18ffff', '#536dfe'],
-  pastel: ['#ffb3ba', '#baffc9', '#bae1ff', '#ffffba', '#e0bbff']
-};
-let currentPalette = 'neon';
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_SETTINGS);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
 
-const palettesEl = document.getElementById('palettes');
-Object.keys(palettes).forEach((name, i) => {
-  const sw = document.createElement('span');
-  sw.className = 'swatch' + (name === currentPalette ? ' active' : '');
-  sw.style.background = `linear-gradient(135deg, ${palettes[name][0]}, ${palettes[name][2]})`;
-  sw.dataset.name = name;
-  sw.title = name;
-  sw.addEventListener('click', () => {
-    currentPalette = name;
-    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
-    sw.classList.add('active');
+function saveSettings(goals) {
+  localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(goals));
+}
+
+function loadDiary() {
+  try {
+    const raw = localStorage.getItem(STORAGE_DIARY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+
+function saveDiary(diary) {
+  localStorage.setItem(STORAGE_DIARY, JSON.stringify(diary));
+}
+
+function getTodayEntries() {
+  const diary = loadDiary();
+  const key = todayKey();
+  if (!diary[key]) {
+    diary[key] = { desayuno: [], almuerzo: [], cena: [], snacks: [] };
+    saveDiary(diary);
+  }
+  return diary[key];
+}
+
+function makeId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+}
+
+function normalize(str) {
+  return str.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+function round1(n) { return Math.round(n * 10) / 10; }
+
+// ---------- State ----------
+let goals = loadSettings() || { ...DEFAULT_GOALS };
+let currentSheetMeal = null;
+let currentSelectedFood = null;
+
+// ---------- Render: header date ----------
+function renderDate() {
+  const d = new Date();
+  const label = d.toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById('dateLabel').textContent = label;
+}
+
+// ---------- Render: summary ----------
+function renderSummary() {
+  const entries = getTodayEntries();
+  let kcal = 0, protein = 0, carbs = 0, fat = 0;
+  MEALS.forEach(m => {
+    entries[m.key].forEach(item => {
+      kcal += item.kcal; protein += item.protein; carbs += item.carbs; fat += item.fat;
+    });
   });
-  palettesEl.appendChild(sw);
+  kcal = Math.round(kcal); protein = round1(protein); carbs = round1(carbs); fat = round1(fat);
+
+  document.getElementById('kcalConsumed').textContent = kcal;
+  document.getElementById('kcalGoal').textContent = goals.kcal;
+  document.getElementById('proteinConsumed').textContent = protein;
+  document.getElementById('proteinGoal').textContent = goals.protein;
+  document.getElementById('carbsConsumed').textContent = carbs;
+  document.getElementById('carbsGoal').textContent = goals.carbs;
+  document.getElementById('fatConsumed').textContent = fat;
+  document.getElementById('fatGoal').textContent = goals.fat;
+
+  setFill('kcalFill', kcal, goals.kcal);
+  setFill('proteinFill', protein, goals.protein);
+  setFill('carbsFill', carbs, goals.carbs);
+  setFill('fatFill', fat, goals.fat);
+}
+
+function setFill(id, value, goal) {
+  const el = document.getElementById(id);
+  const pct = goal > 0 ? (value / goal) * 100 : 0;
+  el.style.width = Math.min(pct, 100) + '%';
+  el.classList.toggle('over', pct > 100);
+}
+
+// ---------- Render: meals ----------
+function renderMeals() {
+  const entries = getTodayEntries();
+  const container = document.getElementById('mealsContainer');
+  container.innerHTML = '';
+
+  MEALS.forEach(meal => {
+    const items = entries[meal.key];
+    const subtotal = Math.round(items.reduce((sum, i) => sum + i.kcal, 0));
+
+    const card = document.createElement('div');
+    card.className = 'meal-card';
+
+    const header = document.createElement('div');
+    header.className = 'meal-header';
+    header.innerHTML = `<h3>${meal.label}</h3><span class="meal-kcal">${subtotal} kcal</span>`;
+    card.appendChild(header);
+
+    const itemsWrap = document.createElement('div');
+    itemsWrap.className = 'meal-items';
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'food-item';
+      row.innerHTML = `
+        <div>
+          <div class="food-item-name">${escapeHtml(item.name)}</div>
+          <div class="food-item-detail">${item.grams ? item.grams + ' g · ' : ''}${Math.round(item.kcal)} kcal · P${round1(item.protein)} C${round1(item.carbs)} G${round1(item.fat)}</div>
+        </div>
+        <button class="delete-btn" data-meal="${meal.key}" data-id="${item.id}" aria-label="Eliminar">✕</button>
+      `;
+      itemsWrap.appendChild(row);
+    });
+    card.appendChild(itemsWrap);
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-food-btn';
+    addBtn.textContent = '+ Agregar alimento';
+    addBtn.dataset.meal = meal.key;
+    card.appendChild(addBtn);
+
+    container.appendChild(card);
+  });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderAll() {
+  renderDate();
+  renderSummary();
+  renderMeals();
+}
+
+// ---------- Delete item ----------
+document.getElementById('mealsContainer').addEventListener('click', (e) => {
+  const delBtn = e.target.closest('.delete-btn');
+  if (delBtn) {
+    const diary = loadDiary();
+    const key = todayKey();
+    const mealKey = delBtn.dataset.meal;
+    const id = delBtn.dataset.id;
+    diary[key][mealKey] = diary[key][mealKey].filter(i => i.id !== id);
+    saveDiary(diary);
+    renderAll();
+    return;
+  }
+  const addBtn = e.target.closest('.add-food-btn');
+  if (addBtn) {
+    openSheet(addBtn.dataset.meal);
+  }
 });
 
-function randColor() {
-  const arr = palettes[currentPalette];
-  return arr[Math.floor(Math.random() * arr.length)];
+// ---------- Sheet: agregar alimento ----------
+const sheetOverlay = document.getElementById('sheetOverlay');
+const sheetBody = document.getElementById('sheetBody');
+const sheetTitle = document.getElementById('sheetTitle');
+const sheetBack = document.getElementById('sheetBack');
+
+function openSheet(mealKey) {
+  currentSheetMeal = mealKey;
+  const mealLabel = MEALS.find(m => m.key === mealKey).label;
+  sheetTitle.textContent = `Agregar a ${mealLabel}`;
+  sheetBack.classList.add('hidden');
+  renderSearchView();
+  showOverlay(sheetOverlay);
 }
 
-let gravity = 0.08;
-document.getElementById('gravity').addEventListener('input', e => {
-  gravity = parseFloat(e.target.value);
-});
-
-let mode = 'burst';
-document.getElementById('mode').addEventListener('change', e => {
-  mode = e.target.value;
-});
-
-document.getElementById('clearBtn').addEventListener('click', () => {
-  particles.length = 0;
-});
-
-class Particle {
-  constructor(x, y, opts = {}) {
-    this.x = x;
-    this.y = y;
-    const angle = opts.angle ?? Math.random() * Math.PI * 2;
-    const speed = opts.speed ?? Math.random() * 6 + 2;
-    this.vx = Math.cos(angle) * speed;
-    this.vy = Math.sin(angle) * speed;
-    this.size = opts.size ?? Math.random() * 4 + 2;
-    this.color = opts.color ?? randColor();
-    this.life = 1;
-    this.decay = opts.decay ?? (Math.random() * 0.015 + 0.008);
-    this.trail = opts.trail ?? false;
-    this.spark = opts.spark ?? false;
-  }
-  update() {
-    this.vy += gravity;
-    this.vx *= 0.99;
-    this.vy *= 0.99;
-    this.x += this.vx;
-    this.y += this.vy;
-    this.life -= this.decay;
-  }
-  draw() {
-    ctx.globalAlpha = Math.max(this.life, 0);
-    ctx.fillStyle = this.color;
-    ctx.shadowBlur = this.spark ? 12 : 6;
-    ctx.shadowColor = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, Math.max(this.size * this.life, 0), 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-    ctx.shadowBlur = 0;
-  }
+function closeSheet() {
+  hideOverlay(sheetOverlay);
+  currentSheetMeal = null;
+  currentSelectedFood = null;
 }
 
-let particles = [];
-let rockets = [];
+document.getElementById('sheetClose').addEventListener('click', closeSheet);
+sheetOverlay.addEventListener('click', (e) => { if (e.target === sheetOverlay) closeSheet(); });
 
-function burst(x, y, count = 24) {
-  for (let i = 0; i < count; i++) {
-    particles.push(new Particle(x, y));
-  }
+function showOverlay(el) {
+  document.body.classList.add('no-scroll');
+  el.classList.add('open');
+}
+function hideOverlay(el) {
+  document.body.classList.remove('no-scroll');
+  el.classList.remove('open');
 }
 
-function trailAt(x, y) {
-  particles.push(new Particle(x, y, {
-    speed: Math.random() * 1.5,
-    size: Math.random() * 3 + 1.5,
-    decay: Math.random() * 0.02 + 0.015
-  }));
-}
+// ---- Search view ----
+function renderSearchView() {
+  sheetBack.classList.add('hidden');
+  sheetTitle.textContent = `Agregar a ${MEALS.find(m => m.key === currentSheetMeal).label}`;
+  sheetBody.innerHTML = `
+    <input type="text" class="search-input" id="foodSearchInput" placeholder="Buscar alimentos..." autocomplete="off">
+    <button class="quick-manual-btn" id="manualEntryBtn">✏️ &nbsp; Ingreso manual (calorías y macros)</button>
+    <div id="searchResults"></div>
+  `;
 
-class Rocket {
-  constructor(x) {
-    this.x = x;
-    this.y = H;
-    this.targetY = Math.random() * H * 0.35 + H * 0.15;
-    this.vy = -(Math.random() * 4 + 9);
-    this.color = randColor();
-  }
-  update() {
-    this.y += this.vy;
-    particles.push(new Particle(this.x, this.y, {
-      speed: 0.3,
-      size: 1.5,
-      decay: 0.05,
-      color: this.color
-    }));
-  }
-  done() {
-    return this.y <= this.targetY;
-  }
-}
+  const input = document.getElementById('foodSearchInput');
+  const resultsEl = document.getElementById('searchResults');
 
-let mouseDown = false;
-let lastPos = null;
-
-function getPos(e) {
-  if (e.touches && e.touches.length) {
-    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  }
-  return { x: e.clientX, y: e.clientY };
-}
-
-function handleDown(e) {
-  mouseDown = true;
-  const pos = getPos(e);
-  lastPos = pos;
-  if (mode === 'burst') {
-    burst(pos.x, pos.y);
-  } else if (mode === 'fireworks') {
-    rockets.push(new Rocket(pos.x));
-  } else if (mode === 'trail') {
-    trailAt(pos.x, pos.y);
-  }
-}
-
-function handleMove(e) {
-  if (!mouseDown) return;
-  const pos = getPos(e);
-  if (mode === 'trail') {
-    trailAt(pos.x, pos.y);
-  } else if (mode === 'burst') {
-    if (!lastPos || Math.hypot(pos.x - lastPos.x, pos.y - lastPos.y) > 20) {
-      burst(pos.x, pos.y, 8);
-      lastPos = pos;
+  function doSearch() {
+    const q = normalize(input.value.trim());
+    let list = FOODS;
+    if (q.length > 0) {
+      list = FOODS.filter(f => normalize(f.name).includes(q));
     }
-  }
-}
-
-function handleUp() {
-  mouseDown = false;
-  lastPos = null;
-}
-
-canvas.addEventListener('mousedown', handleDown);
-canvas.addEventListener('mousemove', handleMove);
-window.addEventListener('mouseup', handleUp);
-canvas.addEventListener('touchstart', e => { handleDown(e); e.preventDefault(); }, { passive: false });
-canvas.addEventListener('touchmove', e => { handleMove(e); e.preventDefault(); }, { passive: false });
-canvas.addEventListener('touchend', handleUp);
-
-function animate() {
-  ctx.fillStyle = 'rgba(11, 13, 23, 0.18)';
-  ctx.fillRect(0, 0, W, H);
-
-  for (let i = rockets.length - 1; i >= 0; i--) {
-    const r = rockets[i];
-    r.update();
-    if (r.done()) {
-      burst(r.x, r.y, 40);
-      rockets.splice(i, 1);
-    }
+    renderResults(list, resultsEl, q.length > 0);
   }
 
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.update();
-    p.draw();
-    if (p.life <= 0 || p.y > H + 50) {
-      particles.splice(i, 1);
-    }
-  }
-
-  requestAnimationFrame(animate);
+  input.addEventListener('input', doSearch);
+  document.getElementById('manualEntryBtn').addEventListener('click', renderManualView);
+  doSearch();
+  setTimeout(() => input.focus(), 250);
 }
 
-animate();
+function renderResults(list, container, isFiltered) {
+  container.innerHTML = '';
+  if (list.length === 0) {
+    container.innerHTML = `<div class="empty-state">No se encontró ese alimento.<br>Usa "Ingreso manual" para agregarlo.</div>`;
+    return;
+  }
+  const toShow = isFiltered ? list : list;
+  toShow.forEach(food => {
+    const row = document.createElement('div');
+    row.className = 'result-item';
+    row.innerHTML = `
+      <div>
+        <div class="result-name">${escapeHtml(food.name)}</div>
+        <div class="result-detail">${food.kcal} kcal · P${food.protein} C${food.carbs} G${food.fat} <span style="color:var(--text-faint)">/100g</span></div>
+        <div class="result-cat">${escapeHtml(food.cat)}</div>
+      </div>
+      <span class="result-arrow">›</span>
+    `;
+    row.addEventListener('click', () => {
+      currentSelectedFood = food;
+      renderQuantityView();
+    });
+    container.appendChild(row);
+  });
+}
 
-// pequeña explosión de bienvenida
-setTimeout(() => burst(W / 2, H / 2, 40), 300);
+// ---- Quantity view ----
+function renderQuantityView() {
+  const food = currentSelectedFood;
+  sheetTitle.textContent = 'Cantidad';
+  sheetBack.classList.remove('hidden');
+  sheetBack.onclick = renderSearchView;
+
+  sheetBody.innerHTML = `
+    <div class="qty-food-name">${escapeHtml(food.name)}</div>
+    <div class="qty-food-per100">${food.kcal} kcal · P${food.protein}g C${food.carbs}g G${food.fat}g (por 100g)</div>
+    <div class="field">
+      <label>Cantidad (gramos)</label>
+      <input type="number" class="form-input" id="qtyInput" inputmode="decimal" value="100" min="0" step="1">
+    </div>
+    <div class="qty-preview">
+      <div><div class="val" id="pvKcal">0</div><div class="lbl">Kcal</div></div>
+      <div><div class="val" id="pvProtein">0</div><div class="lbl">Prot.</div></div>
+      <div><div class="val" id="pvCarbs">0</div><div class="lbl">Carbs</div></div>
+      <div><div class="val" id="pvFat">0</div><div class="lbl">Grasa</div></div>
+    </div>
+    <button class="btn-primary" id="confirmQtyBtn">Agregar</button>
+  `;
+
+  const qtyInput = document.getElementById('qtyInput');
+  function updatePreview() {
+    const grams = parseFloat(qtyInput.value) || 0;
+    const factor = grams / 100;
+    document.getElementById('pvKcal').textContent = Math.round(food.kcal * factor);
+    document.getElementById('pvProtein').textContent = round1(food.protein * factor);
+    document.getElementById('pvCarbs').textContent = round1(food.carbs * factor);
+    document.getElementById('pvFat').textContent = round1(food.fat * factor);
+  }
+  qtyInput.addEventListener('input', updatePreview);
+  updatePreview();
+  setTimeout(() => { qtyInput.focus(); qtyInput.select(); }, 250);
+
+  document.getElementById('confirmQtyBtn').addEventListener('click', () => {
+    const grams = parseFloat(qtyInput.value) || 0;
+    const factor = grams / 100;
+    addEntry({
+      id: makeId(),
+      name: food.name,
+      grams: grams,
+      kcal: food.kcal * factor,
+      protein: food.protein * factor,
+      carbs: food.carbs * factor,
+      fat: food.fat * factor,
+    });
+  });
+}
+
+// ---- Manual entry view ----
+function renderManualView() {
+  sheetTitle.textContent = 'Ingreso manual';
+  sheetBack.classList.remove('hidden');
+  sheetBack.onclick = renderSearchView;
+
+  sheetBody.innerHTML = `
+    <div class="field">
+      <label>Nombre del alimento</label>
+      <input type="text" class="form-input" id="manName" placeholder="Ej. Ensalada de la esquina" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Cantidad (g, opcional)</label>
+      <input type="number" class="form-input" id="manGrams" inputmode="decimal" placeholder="Ej. 250" min="0">
+    </div>
+    <div class="field">
+      <label>Calorías (kcal)</label>
+      <input type="number" class="form-input" id="manKcal" inputmode="decimal" placeholder="0" min="0">
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Proteína (g)</label>
+        <input type="number" class="form-input" id="manProtein" inputmode="decimal" placeholder="0" min="0">
+      </div>
+      <div class="field">
+        <label>Carbohidratos (g)</label>
+        <input type="number" class="form-input" id="manCarbs" inputmode="decimal" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="field">
+      <label>Grasas (g)</label>
+      <input type="number" class="form-input" id="manFat" inputmode="decimal" placeholder="0" min="0">
+    </div>
+    <button class="btn-primary" id="confirmManualBtn">Agregar</button>
+  `;
+
+  setTimeout(() => document.getElementById('manName').focus(), 250);
+
+  document.getElementById('confirmManualBtn').addEventListener('click', () => {
+    const name = document.getElementById('manName').value.trim();
+    if (!name) { document.getElementById('manName').focus(); return; }
+    const grams = parseFloat(document.getElementById('manGrams').value) || null;
+    const kcal = parseFloat(document.getElementById('manKcal').value) || 0;
+    const protein = parseFloat(document.getElementById('manProtein').value) || 0;
+    const carbs = parseFloat(document.getElementById('manCarbs').value) || 0;
+    const fat = parseFloat(document.getElementById('manFat').value) || 0;
+
+    addEntry({ id: makeId(), name, grams, kcal, protein, carbs, fat });
+  });
+}
+
+function addEntry(entry) {
+  const diary = loadDiary();
+  const key = todayKey();
+  if (!diary[key]) diary[key] = { desayuno: [], almuerzo: [], cena: [], snacks: [] };
+  diary[key][currentSheetMeal].push(entry);
+  saveDiary(diary);
+  closeSheet();
+  renderAll();
+}
+
+// ---------- Settings ----------
+const settingsOverlay = document.getElementById('settingsOverlay');
+
+function openSettings() {
+  document.getElementById('goalKcal').value = goals.kcal;
+  document.getElementById('goalProtein').value = goals.protein;
+  document.getElementById('goalCarbs').value = goals.carbs;
+  document.getElementById('goalFat').value = goals.fat;
+  showOverlay(settingsOverlay);
+}
+function closeSettings() { hideOverlay(settingsOverlay); }
+
+document.getElementById('settingsBtn').addEventListener('click', openSettings);
+document.getElementById('settingsClose').addEventListener('click', () => {
+  if (!loadSettings()) return; // exige guardar al menos una vez en el primer uso
+  closeSettings();
+});
+settingsOverlay.addEventListener('click', (e) => {
+  if (e.target === settingsOverlay && loadSettings()) closeSettings();
+});
+
+document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+  const kcal = parseFloat(document.getElementById('goalKcal').value) || DEFAULT_GOALS.kcal;
+  const protein = parseFloat(document.getElementById('goalProtein').value) || DEFAULT_GOALS.protein;
+  const carbs = parseFloat(document.getElementById('goalCarbs').value) || DEFAULT_GOALS.carbs;
+  const fat = parseFloat(document.getElementById('goalFat').value) || DEFAULT_GOALS.fat;
+  goals = { kcal, protein, carbs, fat };
+  saveSettings(goals);
+  closeSettings();
+  renderAll();
+});
+
+// ---------- Init ----------
+renderAll();
+if (!loadSettings()) {
+  openSettings();
+}
+
+// ---------- Service worker ----------
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
