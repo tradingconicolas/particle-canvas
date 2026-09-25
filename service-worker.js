@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mi-nutricion-v4';
+const CACHE_NAME = 'mi-nutricion-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -39,14 +39,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Red primero, caché como respaldo offline. Antes era "caché primero" y
-  // eso dejaba la app pegada en versiones viejas después de cada
-  // actualización (había que recargar varias veces para verla). Como la
-  // app es chica, pedirla siempre a la red cuando hay internet no cuesta
-  // nada y garantiza que siempre se vea la última versión; offline sigue
-  // funcionando igual, sirviendo lo último que se guardó en caché.
+  // Red primero, caché como respaldo offline. GitHub Pages manda estos
+  // archivos con "Cache-Control: max-age=600" (10 min) — un fetch() normal
+  // respeta eso y puede devolver una versión vieja del disco de Safari sin
+  // ni siquiera tocar la red. cache:'no-store' fuerza a ignorar esa caché
+  // del navegador y siempre pedir la última versión de verdad.
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: 'no-store' })
       .then((response) => {
         if (response && response.status === 200) {
           const clone = response.clone();

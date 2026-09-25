@@ -2199,10 +2199,17 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (swRefreshed) return;
     swRefreshed = true;
-    window.location.reload();
+    // Un reload normal todavía puede toparse con la caché de 10 min que
+    // pone GitHub Pages. Agregar un parámetro único a la URL garantiza que
+    // el navegador la trate como nunca vista y pida la versión real.
+    const url = new URL(window.location.href);
+    url.searchParams.set('_v', Date.now().toString());
+    window.location.replace(url.toString());
   });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js').then((reg) => {
+    // updateViaCache:'none' evita que el navegador use su caché HTTP para
+    // el propio archivo service-worker.js al buscar actualizaciones.
+    navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' }).then((reg) => {
       reg.update();
     }).catch(() => {});
   });
