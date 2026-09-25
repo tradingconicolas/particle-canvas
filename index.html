@@ -609,6 +609,21 @@
   .water-btn:active { background: #262629; }
   #waterGlassesLabel { font-size: 15px; font-weight: 700; min-width: 74px; text-align: center; }
 
+  .other-nutrients-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 20px;
+  }
+  .on-label { font-size: 13px; color: var(--text-dim); font-weight: 600; margin-bottom: 3px; }
+  .on-value { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .on-value .goal { color: var(--text-faint); font-weight: 500; }
+  .other-nutrients-note {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+
   .app-hidden { display: none !important; }
 
   .auth-screen {
@@ -792,6 +807,41 @@
       <h3 style="margin:0 0 10px;">📝 Notas</h3>
       <textarea id="dayNotes" class="form-input" style="min-height:70px;resize:vertical;width:100%;font-family:inherit;" placeholder="Escribe algo sobre tu día..."></textarea>
     </section>
+
+    <section class="meal-card">
+      <h3 style="margin:0 0 14px;">🧪 Otros Nutrientes</h3>
+      <div class="other-nutrients-grid">
+        <div class="on-item">
+          <div class="on-label">Fibra</div>
+          <div class="on-value"><span id="fiberConsumed">0</span><span class="goal"> / <span id="fiberGoal">30</span>g</span></div>
+          <div class="progress-bar small"><div class="progress-fill" id="fiberFill"></div></div>
+        </div>
+        <div class="on-item">
+          <div class="on-label">Azúcares</div>
+          <div class="on-value"><span id="sugarConsumed">0</span><span class="goal"> / <span id="sugarGoal">50</span>g</span></div>
+          <div class="progress-bar small"><div class="progress-fill" id="sugarFill"></div></div>
+        </div>
+        <div class="on-item">
+          <div class="on-label">Sodio</div>
+          <div class="on-value"><span id="sodiumConsumed">0</span><span class="goal"> / <span id="sodiumGoal">2300</span>mg</span></div>
+          <div class="progress-bar small"><div class="progress-fill" id="sodiumFill"></div></div>
+        </div>
+        <div class="on-item">
+          <div class="on-label">Grasas Sat.</div>
+          <div class="on-value"><span id="satFatConsumed">0</span><span class="goal"> / <span id="satFatGoal">22</span>g</span></div>
+          <div class="progress-bar small"><div class="progress-fill" id="satFatFill"></div></div>
+        </div>
+      </div>
+      <div class="other-nutrients-note">Fibra: entre más cerca de la meta, mejor. Azúcares, sodio y grasas saturadas: son límites — pasarte se marca en rojo.</div>
+    </section>
+
+    <section class="meal-card">
+      <div class="meal-header">
+        <h3>💊 Meds y Suplementos</h3>
+      </div>
+      <div class="meal-items" id="medsItems"></div>
+      <button class="add-food-btn" id="addMedBtn">+ Agregar</button>
+    </section>
   </main>
 </div>
 
@@ -893,224 +943,224 @@ let currentUid = null;
 // ---------- Base de datos local de alimentos (valores aproximados por 100g) ----------
 const FOODS = [
   // ---- Proteínas: pollo ----
-  {name:"Pechuga de pollo (sin piel, a la plancha)", cat:"Proteínas", kcal:165, protein:31, carbs:0, fat:3.6, serving:{label:"1 filete mediano", grams:120}},
-  {name:"Muslo de pollo sin piel (cocido)", cat:"Proteínas", kcal:175, protein:24, carbs:0, fat:8, serving:{label:"1 muslo", grams:100}},
-  {name:"Muslo de pollo con piel (cocido)", cat:"Proteínas", kcal:250, protein:22, carbs:0, fat:17, serving:{label:"1 muslo", grams:110}},
-  {name:"Pollo entero con piel (cocido)", cat:"Proteínas", kcal:215, protein:18, carbs:0, fat:15},
-  {name:"Pollo a la brasa (con piel)", cat:"Proteínas", kcal:250, protein:27, carbs:0, fat:16, serving:{label:"1/4 de pollo", grams:220}},
-  {name:"Pollo frito (apanado)", cat:"Proteínas", kcal:307, protein:23, carbs:12, fat:19, serving:{label:"1 filete mediano", grams:120}},
-  {name:"Pollo empanizado (milanesa)", cat:"Proteínas", kcal:275, protein:20, carbs:14, fat:16, serving:{label:"1 filete mediano", grams:120}},
-  {name:"Pollo guisado", cat:"Proteínas", kcal:210, protein:18, carbs:5, fat:13},
-  {name:"Pollo deshilachado / deshebrado", cat:"Proteínas", kcal:165, protein:28, carbs:0, fat:5, serving:{label:"1 taza", grams:150}},
-  {name:"Pollo molido (cocido)", cat:"Proteínas", kcal:190, protein:24, carbs:0, fat:10, serving:{label:"1 taza", grams:200}},
-  {name:"Alitas de pollo fritas", cat:"Proteínas", kcal:290, protein:22, carbs:2, fat:21},
-  {name:"Pechuga de pollo al chipotle", cat:"Proteínas", kcal:175, protein:20, carbs:5, fat:8},
-  {name:"Pollo BBQ", cat:"Proteínas", kcal:190, protein:22, carbs:8, fat:8},
-  {name:"Pollo teriyaki", cat:"Proteínas", kcal:163, protein:20, carbs:9, fat:5},
-  {name:"Hígado de pollo (cocido)", cat:"Proteínas", kcal:167, protein:25, carbs:1, fat:6},
+  {name:"Pechuga de pollo (sin piel, a la plancha)", cat:"Proteínas", kcal:165, protein:31, carbs:0, fat:3.6, serving:{label:"1 filete mediano", grams:120}, fiber:0, sugar:0, sodium:74, satFat:1.0},
+  {name:"Muslo de pollo sin piel (cocido)", cat:"Proteínas", kcal:175, protein:24, carbs:0, fat:8, serving:{label:"1 muslo", grams:100}, fiber:0, sugar:0, sodium:90, satFat:2.3},
+  {name:"Muslo de pollo con piel (cocido)", cat:"Proteínas", kcal:250, protein:22, carbs:0, fat:17, serving:{label:"1 muslo", grams:110}, fiber:0, sugar:0, sodium:95, satFat:4.7},
+  {name:"Pollo entero con piel (cocido)", cat:"Proteínas", kcal:215, protein:18, carbs:0, fat:15, fiber:0, sugar:0, sodium:82, satFat:4.3},
+  {name:"Pollo a la brasa (con piel)", cat:"Proteínas", kcal:250, protein:27, carbs:0, fat:16, serving:{label:"1/4 de pollo", grams:220}, fiber:0, sugar:0, sodium:380, satFat:4.5},
+  {name:"Pollo frito (apanado)", cat:"Proteínas", kcal:307, protein:23, carbs:12, fat:19, serving:{label:"1 filete mediano", grams:120}, fiber:0.5, sugar:1, sodium:480, satFat:4.5},
+  {name:"Pollo empanizado (milanesa)", cat:"Proteínas", kcal:275, protein:20, carbs:14, fat:16, serving:{label:"1 filete mediano", grams:120}, fiber:0.6, sugar:1, sodium:450, satFat:4.0},
+  {name:"Pollo guisado", cat:"Proteínas", kcal:210, protein:18, carbs:5, fat:13, fiber:0.3, sugar:1, sodium:350, satFat:3.5},
+  {name:"Pollo deshilachado / deshebrado", cat:"Proteínas", kcal:165, protein:28, carbs:0, fat:5, serving:{label:"1 taza", grams:150}, fiber:0, sugar:0, sodium:300, satFat:1.5},
+  {name:"Pollo molido (cocido)", cat:"Proteínas", kcal:190, protein:24, carbs:0, fat:10, serving:{label:"1 taza", grams:200}, fiber:0, sugar:0, sodium:80, satFat:2.8},
+  {name:"Alitas de pollo fritas", cat:"Proteínas", kcal:290, protein:22, carbs:2, fat:21, fiber:0, sugar:0, sodium:400, satFat:5.5},
+  {name:"Pechuga de pollo al chipotle", cat:"Proteínas", kcal:175, protein:20, carbs:5, fat:8, fiber:0.5, sugar:2, sodium:420, satFat:2.0},
+  {name:"Pollo BBQ", cat:"Proteínas", kcal:190, protein:22, carbs:8, fat:8, fiber:0.3, sugar:6, sodium:450, satFat:2.0},
+  {name:"Pollo teriyaki", cat:"Proteínas", kcal:163, protein:20, carbs:9, fat:5, fiber:0.2, sugar:6, sodium:500, satFat:1.3},
+  {name:"Hígado de pollo (cocido)", cat:"Proteínas", kcal:167, protein:25, carbs:1, fat:6, fiber:0, sugar:0, sodium:71, satFat:1.6},
 
   // ---- Proteínas: carnes rojas y cerdo ----
-  {name:"Carne de res (lomo, cocida)", cat:"Proteínas", kcal:250, protein:26, carbs:0, fat:15, serving:{label:"1 bistec", grams:150}},
-  {name:"Carne molida de res (15% grasa, cocida)", cat:"Proteínas", kcal:254, protein:18, carbs:0, fat:20},
-  {name:"Carne molida de res (magra, cocida)", cat:"Proteínas", kcal:165, protein:22, carbs:0, fat:8},
-  {name:"Bistec a la plancha", cat:"Proteínas", kcal:220, protein:25, carbs:0, fat:12, serving:{label:"1 bistec", grams:150}},
-  {name:"Churrasco a la parrilla", cat:"Proteínas", kcal:210, protein:26, carbs:0, fat:11},
-  {name:"Cecina", cat:"Proteínas", kcal:300, protein:35, carbs:0, fat:17},
-  {name:"Hígado de res (cocido)", cat:"Proteínas", kcal:175, protein:26, carbs:4, fat:5},
-  {name:"Lomo de cerdo (cocido)", cat:"Proteínas", kcal:242, protein:27, carbs:0, fat:14},
-  {name:"Chuleta de cerdo a la plancha", cat:"Proteínas", kcal:231, protein:25, carbs:0, fat:14},
-  {name:"Costillas de cerdo BBQ", cat:"Proteínas", kcal:280, protein:20, carbs:6, fat:19},
-  {name:"Chicharrón de cerdo", cat:"Proteínas", kcal:350, protein:25, carbs:0, fat:27},
-  {name:"Cordero (pierna, cocida)", cat:"Proteínas", kcal:258, protein:25, carbs:0, fat:17},
-  {name:"Tocino / bacon frito", cat:"Proteínas", kcal:541, protein:37, carbs:1.4, fat:42},
-  {name:"Jamón de pavo", cat:"Proteínas", kcal:105, protein:17, carbs:3, fat:2.5},
-  {name:"Jamón inglés", cat:"Proteínas", kcal:145, protein:18, carbs:2, fat:7},
-  {name:"Chorizo", cat:"Proteínas", kcal:340, protein:19, carbs:2, fat:28},
-  {name:"Salchicha (hot dog)", cat:"Proteínas", kcal:290, protein:11, carbs:3, fat:26},
+  {name:"Carne de res (lomo, cocida)", cat:"Proteínas", kcal:250, protein:26, carbs:0, fat:15, serving:{label:"1 bistec", grams:150}, fiber:0, sugar:0, sodium:60, satFat:6.0},
+  {name:"Carne molida de res (15% grasa, cocida)", cat:"Proteínas", kcal:254, protein:18, carbs:0, fat:20, fiber:0, sugar:0, sodium:70, satFat:7.8},
+  {name:"Carne molida de res (magra, cocida)", cat:"Proteínas", kcal:165, protein:22, carbs:0, fat:8, fiber:0, sugar:0, sodium:65, satFat:3.0},
+  {name:"Bistec a la plancha", cat:"Proteínas", kcal:220, protein:25, carbs:0, fat:12, serving:{label:"1 bistec", grams:150}, fiber:0, sugar:0, sodium:380, satFat:4.5},
+  {name:"Churrasco a la parrilla", cat:"Proteínas", kcal:210, protein:26, carbs:0, fat:11, fiber:0, sugar:0, sodium:350, satFat:4.2},
+  {name:"Cecina", cat:"Proteínas", kcal:300, protein:35, carbs:0, fat:17, fiber:0, sugar:0, sodium:1200, satFat:6.0},
+  {name:"Hígado de res (cocido)", cat:"Proteínas", kcal:175, protein:26, carbs:4, fat:5, fiber:0, sugar:0, sodium:70, satFat:1.8},
+  {name:"Lomo de cerdo (cocido)", cat:"Proteínas", kcal:242, protein:27, carbs:0, fat:14, fiber:0, sugar:0, sodium:62, satFat:4.5},
+  {name:"Chuleta de cerdo a la plancha", cat:"Proteínas", kcal:231, protein:25, carbs:0, fat:14, fiber:0, sugar:0, sodium:380, satFat:4.6},
+  {name:"Costillas de cerdo BBQ", cat:"Proteínas", kcal:280, protein:20, carbs:6, fat:19, fiber:0.3, sugar:6, sodium:480, satFat:7.0},
+  {name:"Chicharrón de cerdo", cat:"Proteínas", kcal:350, protein:25, carbs:0, fat:27, fiber:0, sugar:0, sodium:550, satFat:10.0},
+  {name:"Cordero (pierna, cocida)", cat:"Proteínas", kcal:258, protein:25, carbs:0, fat:17, fiber:0, sugar:0, sodium:72, satFat:6.0},
+  {name:"Tocino / bacon frito", cat:"Proteínas", kcal:541, protein:37, carbs:1.4, fat:42, fiber:0, sugar:0, sodium:1400, satFat:14.0},
+  {name:"Jamón de pavo", cat:"Proteínas", kcal:105, protein:17, carbs:3, fat:2.5, fiber:0, sugar:1, sodium:900, satFat:0.8},
+  {name:"Jamón inglés", cat:"Proteínas", kcal:145, protein:18, carbs:2, fat:7, fiber:0, sugar:1, sodium:1000, satFat:2.5},
+  {name:"Chorizo", cat:"Proteínas", kcal:340, protein:19, carbs:2, fat:28, fiber:0, sugar:1, sodium:1100, satFat:10.0},
+  {name:"Salchicha (hot dog)", cat:"Proteínas", kcal:290, protein:11, carbs:3, fat:26, fiber:0, sugar:2, sodium:900, satFat:9.0},
 
   // ---- Proteínas: pescados y mariscos ----
-  {name:"Pescado blanco (bonito, cocido)", cat:"Proteínas", kcal:105, protein:22, carbs:0, fat:1.5, serving:{label:"1 filete", grams:150}},
-  {name:"Pescado frito (apanado)", cat:"Proteínas", kcal:230, protein:18, carbs:12, fat:13},
-  {name:"Salmón (cocido)", cat:"Proteínas", kcal:208, protein:20, carbs:0, fat:13, serving:{label:"1 filete", grams:150}},
-  {name:"Atún en agua (lata, escurrido)", cat:"Proteínas", kcal:116, protein:25.5, carbs:0, fat:0.8, serving:{label:"1 lata", grams:120}},
-  {name:"Atún fresco a la plancha", cat:"Proteínas", kcal:132, protein:28, carbs:0, fat:1.3},
-  {name:"Camarones cocidos", cat:"Proteínas", kcal:99, protein:24, carbs:0.2, fat:0.3},
-  {name:"Pulpo cocido", cat:"Proteínas", kcal:82, protein:15, carbs:2.2, fat:1},
-  {name:"Conchas negras / conchas de abanico", cat:"Proteínas", kcal:74, protein:12, carbs:3, fat:1.5},
-  {name:"Calamar frito (jalea)", cat:"Proteínas", kcal:260, protein:16, carbs:14, fat:16},
+  {name:"Pescado blanco (bonito, cocido)", cat:"Proteínas", kcal:105, protein:22, carbs:0, fat:1.5, serving:{label:"1 filete", grams:150}, fiber:0, sugar:0, sodium:70, satFat:0.4},
+  {name:"Pescado frito (apanado)", cat:"Proteínas", kcal:230, protein:18, carbs:12, fat:13, fiber:0.5, sugar:1, sodium:400, satFat:3.0},
+  {name:"Salmón (cocido)", cat:"Proteínas", kcal:208, protein:20, carbs:0, fat:13, serving:{label:"1 filete", grams:150}, fiber:0, sugar:0, sodium:60, satFat:3.0},
+  {name:"Atún en agua (lata, escurrido)", cat:"Proteínas", kcal:116, protein:25.5, carbs:0, fat:0.8, serving:{label:"1 lata", grams:120}, fiber:0, sugar:0, sodium:320, satFat:0.2},
+  {name:"Atún fresco a la plancha", cat:"Proteínas", kcal:132, protein:28, carbs:0, fat:1.3, fiber:0, sugar:0, sodium:50, satFat:0.3},
+  {name:"Camarones cocidos", cat:"Proteínas", kcal:99, protein:24, carbs:0.2, fat:0.3, fiber:0, sugar:0, sodium:190, satFat:0.1},
+  {name:"Pulpo cocido", cat:"Proteínas", kcal:82, protein:15, carbs:2.2, fat:1, fiber:0, sugar:0, sodium:230, satFat:0.2},
+  {name:"Conchas negras / conchas de abanico", cat:"Proteínas", kcal:74, protein:12, carbs:3, fat:1.5, fiber:0, sugar:0, sodium:300, satFat:0.1},
+  {name:"Calamar frito (jalea)", cat:"Proteínas", kcal:260, protein:16, carbs:14, fat:16, fiber:0.4, sugar:1, sodium:450, satFat:3.0},
 
   // ---- Proteínas: huevos ----
-  {name:"Huevo entero (cocido)", cat:"Proteínas", kcal:155, protein:13, carbs:1.1, fat:11, serving:{label:"1 huevo", grams:50}},
-  {name:"Huevo frito", cat:"Proteínas", kcal:196, protein:14, carbs:0.9, fat:15, serving:{label:"1 huevo", grams:50}},
-  {name:"Clara de huevo (cocida)", cat:"Proteínas", kcal:52, protein:11, carbs:0.7, fat:0.2},
-  {name:"Tortilla de huevo (con aceite)", cat:"Proteínas", kcal:210, protein:13, carbs:2, fat:16},
+  {name:"Huevo entero (cocido)", cat:"Proteínas", kcal:155, protein:13, carbs:1.1, fat:11, serving:{label:"1 huevo", grams:50}, fiber:0, sugar:1.1, sodium:124, satFat:3.3},
+  {name:"Huevo frito", cat:"Proteínas", kcal:196, protein:14, carbs:0.9, fat:15, serving:{label:"1 huevo", grams:50}, fiber:0, sugar:0.4, sodium:200, satFat:4.0},
+  {name:"Clara de huevo (cocida)", cat:"Proteínas", kcal:52, protein:11, carbs:0.7, fat:0.2, fiber:0, sugar:0.7, sodium:166, satFat:0.0},
+  {name:"Tortilla de huevo (con aceite)", cat:"Proteínas", kcal:210, protein:13, carbs:2, fat:16, fiber:0, sugar:0.5, sodium:220, satFat:4.5},
 
   // ---- Proteínas genéricas (verificadas con la data pública de Fitia/Nutritiontechnologies) ----
-  {name:"Pollo (genérico)", cat:"Proteínas", kcal:120, protein:22.5, carbs:0, fat:2.6},
-  {name:"Carne de res (genérica)", cat:"Proteínas", kcal:185, protein:20.3, carbs:0, fat:11.2},
-  {name:"Pescado (genérico)", cat:"Proteínas", kcal:116, protein:19.3, carbs:0.3, fat:4.1},
-  {name:"Atún (genérico)", cat:"Proteínas", kcal:157, protein:25.1, carbs:0, fat:5.5},
-  {name:"Pavo (pechuga, genérico)", cat:"Proteínas", kcal:114, protein:23.3, carbs:0, fat:2.3},
-  {name:"Cerdo (genérico, magro)", cat:"Proteínas", kcal:132, protein:22.4, carbs:0, fat:4.1},
-  {name:"Tofu", cat:"Proteínas", kcal:76, protein:8.1, carbs:1.9, fat:4.8},
+  {name:"Pollo (genérico)", cat:"Proteínas", kcal:120, protein:22.5, carbs:0, fat:2.6, fiber:0, sugar:0, sodium:250, satFat:0.8},
+  {name:"Carne de res (genérica)", cat:"Proteínas", kcal:185, protein:20.3, carbs:0, fat:11.2, fiber:0, sugar:0, sodium:65, satFat:4.5},
+  {name:"Pescado (genérico)", cat:"Proteínas", kcal:116, protein:19.3, carbs:0.3, fat:4.1, fiber:0, sugar:0, sodium:200, satFat:1.0},
+  {name:"Atún (genérico)", cat:"Proteínas", kcal:157, protein:25.1, carbs:0, fat:5.5, fiber:0, sugar:0, sodium:280, satFat:1.5},
+  {name:"Pavo (pechuga, genérico)", cat:"Proteínas", kcal:114, protein:23.3, carbs:0, fat:2.3, fiber:0, sugar:0, sodium:550, satFat:0.7},
+  {name:"Cerdo (genérico, magro)", cat:"Proteínas", kcal:132, protein:22.4, carbs:0, fat:4.1, fiber:0, sugar:0, sodium:300, satFat:1.4},
+  {name:"Tofu", cat:"Proteínas", kcal:76, protein:8.1, carbs:1.9, fat:4.8, fiber:0.4, sugar:0.6, sodium:7, satFat:0.7},
 
   // ---- Carbohidratos ----
-  {name:"Arroz blanco (cocido)", cat:"Carbohidratos", kcal:130, protein:2.7, carbs:28, fat:0.3, serving:{label:"1 taza", grams:195}},
-  {name:"Arroz integral (cocido)", cat:"Carbohidratos", kcal:123, protein:2.6, carbs:25.6, fat:1},
-  {name:"Arroz chaufa (base, sin proteína)", cat:"Carbohidratos", kcal:175, protein:4, carbs:28, fat:5},
-  {name:"Papa (cocida / sancochada)", cat:"Carbohidratos", kcal:87, protein:1.9, carbs:20, fat:0.1, serving:{label:"1 papa mediana", grams:150}},
-  {name:"Papa frita (casera)", cat:"Carbohidratos", kcal:312, protein:3.4, carbs:41, fat:15, serving:{label:"1 porción", grams:150}},
-  {name:"Papa frita (pollería)", cat:"Carbohidratos", kcal:350, protein:3.5, carbs:42, fat:18},
-  {name:"Puré de papa", cat:"Carbohidratos", kcal:113, protein:2, carbs:17, fat:4},
-  {name:"Camote (cocido)", cat:"Carbohidratos", kcal:90, protein:2, carbs:21, fat:0.1},
-  {name:"Camote frito", cat:"Carbohidratos", kcal:230, protein:2, carbs:33, fat:10},
-  {name:"Yuca (cocida)", cat:"Carbohidratos", kcal:160, protein:1.4, carbs:38, fat:0.3},
-  {name:"Yuca frita", cat:"Carbohidratos", kcal:274, protein:1.6, carbs:35, fat:14},
-  {name:"Plátano frito (tajadas / chifles)", cat:"Carbohidratos", kcal:290, protein:1.5, carbs:38, fat:14},
-  {name:"Pan blanco", cat:"Carbohidratos", kcal:265, protein:9, carbs:49, fat:3.2, serving:{label:"1 pan francés", grams:50}},
-  {name:"Pan integral", cat:"Carbohidratos", kcal:247, protein:13, carbs:41, fat:3.4, serving:{label:"1 rebanada", grams:30}},
-  {name:"Pan de yema / bollo", cat:"Carbohidratos", kcal:310, protein:8, carbs:55, fat:6},
-  {name:"Avena (cruda)", cat:"Carbohidratos", kcal:389, protein:16.9, carbs:66, fat:6.9},
-  {name:"Avena cocida con leche", cat:"Carbohidratos", kcal:90, protein:3.5, carbs:13, fat:2.5},
-  {name:"Quinua (cocida)", cat:"Carbohidratos", kcal:120, protein:4.4, carbs:21, fat:1.9},
-  {name:"Fideos / tallarín (cocido)", cat:"Carbohidratos", kcal:158, protein:5.8, carbs:31, fat:0.9, serving:{label:"1 taza", grams:140}},
-  {name:"Choclo (maíz, cocido)", cat:"Carbohidratos", kcal:96, protein:3.4, carbs:21, fat:1.5, serving:{label:"1 choclo", grams:150}},
-  {name:"Cancha serrana (maíz tostado)", cat:"Carbohidratos", kcal:380, protein:9, carbs:78, fat:3},
-  {name:"Frejoles (cocidos)", cat:"Carbohidratos", kcal:127, protein:8.7, carbs:23, fat:0.5},
-  {name:"Lentejas (cocidas)", cat:"Carbohidratos", kcal:116, protein:9, carbs:20, fat:0.4},
-  {name:"Garbanzos (cocidos)", cat:"Carbohidratos", kcal:164, protein:8.9, carbs:27, fat:2.6},
-  {name:"Habas (cocidas)", cat:"Carbohidratos", kcal:110, protein:7.9, carbs:19.7, fat:0.5},
-  {name:"Mote / trigo (cocido)", cat:"Carbohidratos", kcal:112, protein:4, carbs:24, fat:0.9},
-  {name:"Arvejas (cocidas)", cat:"Carbohidratos", kcal:84, protein:5.4, carbs:15.6, fat:0.2},
-  {name:"Cereal de desayuno", cat:"Carbohidratos", kcal:357, protein:8, carbs:84, fat:0.4},
-  {name:"Popcorn / canchita", cat:"Carbohidratos", kcal:387, protein:12.9, carbs:77.8, fat:4.5},
+  {name:"Arroz blanco (cocido)", cat:"Carbohidratos", kcal:130, protein:2.7, carbs:28, fat:0.3, serving:{label:"1 taza", grams:195}, fiber:0.4, sugar:0.1, sodium:1, satFat:0.1},
+  {name:"Arroz integral (cocido)", cat:"Carbohidratos", kcal:123, protein:2.6, carbs:25.6, fat:1, fiber:1.8, sugar:0.4, sodium:4, satFat:0.2},
+  {name:"Arroz chaufa (base, sin proteína)", cat:"Carbohidratos", kcal:175, protein:4, carbs:28, fat:5, fiber:0.5, sugar:1, sodium:400, satFat:0.9},
+  {name:"Papa (cocida / sancochada)", cat:"Carbohidratos", kcal:87, protein:1.9, carbs:20, fat:0.1, serving:{label:"1 papa mediana", grams:150}, fiber:1.8, sugar:0.8, sodium:6, satFat:0.0},
+  {name:"Papa frita (casera)", cat:"Carbohidratos", kcal:312, protein:3.4, carbs:41, fat:15, serving:{label:"1 porción", grams:150}, fiber:3.8, sugar:0.3, sodium:210, satFat:2.3},
+  {name:"Papa frita (pollería)", cat:"Carbohidratos", kcal:350, protein:3.5, carbs:42, fat:18, fiber:3.5, sugar:0.3, sodium:300, satFat:3.0},
+  {name:"Puré de papa", cat:"Carbohidratos", kcal:113, protein:2, carbs:17, fat:4, fiber:1.5, sugar:1, sodium:320, satFat:2.5},
+  {name:"Camote (cocido)", cat:"Carbohidratos", kcal:90, protein:2, carbs:21, fat:0.1, fiber:3.0, sugar:5.7, sodium:36, satFat:0.0},
+  {name:"Camote frito", cat:"Carbohidratos", kcal:230, protein:2, carbs:33, fat:10, fiber:3.5, sugar:6, sodium:200, satFat:1.5},
+  {name:"Yuca (cocida)", cat:"Carbohidratos", kcal:160, protein:1.4, carbs:38, fat:0.3, fiber:1.8, sugar:1.7, sodium:14, satFat:0.1},
+  {name:"Yuca frita", cat:"Carbohidratos", kcal:274, protein:1.6, carbs:35, fat:14, fiber:2.0, sugar:1.5, sodium:200, satFat:2.0},
+  {name:"Plátano frito (tajadas / chifles)", cat:"Carbohidratos", kcal:290, protein:1.5, carbs:38, fat:14, fiber:2.0, sugar:15, sodium:150, satFat:2.0},
+  {name:"Pan blanco", cat:"Carbohidratos", kcal:265, protein:9, carbs:49, fat:3.2, serving:{label:"1 pan francés", grams:50}, fiber:2.7, sugar:5, sodium:480, satFat:0.7},
+  {name:"Pan integral", cat:"Carbohidratos", kcal:247, protein:13, carbs:41, fat:3.4, serving:{label:"1 rebanada", grams:30}, fiber:6.8, sugar:5.7, sodium:400, satFat:0.7},
+  {name:"Pan de yema / bollo", cat:"Carbohidratos", kcal:310, protein:8, carbs:55, fat:6, fiber:2.0, sugar:12, sodium:350, satFat:2.5},
+  {name:"Avena (cruda)", cat:"Carbohidratos", kcal:389, protein:16.9, carbs:66, fat:6.9, fiber:10.6, sugar:1, sodium:2, satFat:1.2},
+  {name:"Avena cocida con leche", cat:"Carbohidratos", kcal:90, protein:3.5, carbs:13, fat:2.5, fiber:1.5, sugar:4, sodium:40, satFat:1.4},
+  {name:"Quinua (cocida)", cat:"Carbohidratos", kcal:120, protein:4.4, carbs:21, fat:1.9, fiber:2.8, sugar:0.9, sodium:7, satFat:0.2},
+  {name:"Fideos / tallarín (cocido)", cat:"Carbohidratos", kcal:158, protein:5.8, carbs:31, fat:0.9, serving:{label:"1 taza", grams:140}, fiber:1.8, sugar:0.6, sodium:6, satFat:0.2},
+  {name:"Choclo (maíz, cocido)", cat:"Carbohidratos", kcal:96, protein:3.4, carbs:21, fat:1.5, serving:{label:"1 choclo", grams:150}, fiber:2.7, sugar:6.3, sodium:15, satFat:0.2},
+  {name:"Cancha serrana (maíz tostado)", cat:"Carbohidratos", kcal:380, protein:9, carbs:78, fat:3, fiber:8.0, sugar:0.6, sodium:300, satFat:0.5},
+  {name:"Frejoles (cocidos)", cat:"Carbohidratos", kcal:127, protein:8.7, carbs:23, fat:0.5, fiber:6.4, sugar:0.3, sodium:2, satFat:0.1},
+  {name:"Lentejas (cocidas)", cat:"Carbohidratos", kcal:116, protein:9, carbs:20, fat:0.4, fiber:7.9, sugar:1.8, sodium:2, satFat:0.1},
+  {name:"Garbanzos (cocidos)", cat:"Carbohidratos", kcal:164, protein:8.9, carbs:27, fat:2.6, fiber:7.6, sugar:4.8, sodium:7, satFat:0.3},
+  {name:"Habas (cocidas)", cat:"Carbohidratos", kcal:110, protein:7.9, carbs:19.7, fat:0.5, fiber:5.4, sugar:1.9, sodium:5, satFat:0.1},
+  {name:"Mote / trigo (cocido)", cat:"Carbohidratos", kcal:112, protein:4, carbs:24, fat:0.9, fiber:3.5, sugar:0.5, sodium:3, satFat:0.1},
+  {name:"Arvejas (cocidas)", cat:"Carbohidratos", kcal:84, protein:5.4, carbs:15.6, fat:0.2, fiber:4.1, sugar:5.7, sodium:4, satFat:0.1},
+  {name:"Cereal de desayuno", cat:"Carbohidratos", kcal:357, protein:8, carbs:84, fat:0.4, fiber:3.0, sugar:20, sodium:350, satFat:0.3},
+  {name:"Popcorn / canchita", cat:"Carbohidratos", kcal:387, protein:12.9, carbs:77.8, fat:4.5, fiber:14.5, sugar:0.9, sodium:8, satFat:0.6},
 
   // ---- Frutas ----
-  {name:"Palta / aguacate", cat:"Frutas y verduras", kcal:160, protein:2, carbs:8.5, fat:14.7, serving:{label:"1/2 palta", grams:70}},
-  {name:"Plátano", cat:"Frutas y verduras", kcal:89, protein:1.1, carbs:23, fat:0.3, serving:{label:"1 unidad", grams:120}},
-  {name:"Plátano de seda", cat:"Frutas y verduras", kcal:90, protein:1.2, carbs:23, fat:0.2},
-  {name:"Manzana", cat:"Frutas y verduras", kcal:52, protein:0.3, carbs:14, fat:0.2, serving:{label:"1 unidad", grams:150}},
-  {name:"Naranja", cat:"Frutas y verduras", kcal:47, protein:0.9, carbs:12, fat:0.1, serving:{label:"1 unidad", grams:150}},
-  {name:"Mandarina", cat:"Frutas y verduras", kcal:53, protein:0.8, carbs:13, fat:0.3},
-  {name:"Piña", cat:"Frutas y verduras", kcal:50, protein:0.5, carbs:13, fat:0.1},
-  {name:"Papaya", cat:"Frutas y verduras", kcal:43, protein:0.5, carbs:11, fat:0.3},
-  {name:"Mango", cat:"Frutas y verduras", kcal:60, protein:0.8, carbs:15, fat:0.4},
-  {name:"Uva", cat:"Frutas y verduras", kcal:69, protein:0.7, carbs:18, fat:0.2},
-  {name:"Fresa", cat:"Frutas y verduras", kcal:32, protein:0.7, carbs:7.7, fat:0.3},
-  {name:"Sandía", cat:"Frutas y verduras", kcal:30, protein:0.6, carbs:8, fat:0.2},
-  {name:"Melón", cat:"Frutas y verduras", kcal:34, protein:0.8, carbs:8, fat:0.2},
-  {name:"Chirimoya", cat:"Frutas y verduras", kcal:75, protein:1.6, carbs:17.7, fat:0.7},
-  {name:"Granadilla", cat:"Frutas y verduras", kcal:81, protein:1.1, carbs:20, fat:0.4},
-  {name:"Lúcuma", cat:"Frutas y verduras", kcal:99, protein:1.5, carbs:25, fat:0.3},
-  {name:"Maracuyá", cat:"Frutas y verduras", kcal:97, protein:2.2, carbs:23, fat:0.7},
-  {name:"Aguaymanto", cat:"Frutas y verduras", kcal:54, protein:1.9, carbs:11, fat:0.2},
+  {name:"Palta / aguacate", cat:"Frutas y verduras", kcal:160, protein:2, carbs:8.5, fat:14.7, serving:{label:"1/2 palta", grams:70}, fiber:6.7, sugar:0.7, sodium:7, satFat:2.1},
+  {name:"Plátano", cat:"Frutas y verduras", kcal:89, protein:1.1, carbs:23, fat:0.3, serving:{label:"1 unidad", grams:120}, fiber:2.6, sugar:12.2, sodium:1, satFat:0.1},
+  {name:"Plátano de seda", cat:"Frutas y verduras", kcal:90, protein:1.2, carbs:23, fat:0.2, fiber:2.0, sugar:12, sodium:1, satFat:0.1},
+  {name:"Manzana", cat:"Frutas y verduras", kcal:52, protein:0.3, carbs:14, fat:0.2, serving:{label:"1 unidad", grams:150}, fiber:2.4, sugar:10.4, sodium:1, satFat:0.0},
+  {name:"Naranja", cat:"Frutas y verduras", kcal:47, protein:0.9, carbs:12, fat:0.1, serving:{label:"1 unidad", grams:150}, fiber:2.4, sugar:9.4, sodium:0, satFat:0.0},
+  {name:"Mandarina", cat:"Frutas y verduras", kcal:53, protein:0.8, carbs:13, fat:0.3, fiber:1.8, sugar:10.6, sodium:2, satFat:0.0},
+  {name:"Piña", cat:"Frutas y verduras", kcal:50, protein:0.5, carbs:13, fat:0.1, fiber:1.4, sugar:9.9, sodium:1, satFat:0.0},
+  {name:"Papaya", cat:"Frutas y verduras", kcal:43, protein:0.5, carbs:11, fat:0.3, fiber:1.7, sugar:7.8, sodium:8, satFat:0.0},
+  {name:"Mango", cat:"Frutas y verduras", kcal:60, protein:0.8, carbs:15, fat:0.4, fiber:1.6, sugar:13.7, sodium:1, satFat:0.1},
+  {name:"Uva", cat:"Frutas y verduras", kcal:69, protein:0.7, carbs:18, fat:0.2, fiber:0.9, sugar:15.5, sodium:2, satFat:0.1},
+  {name:"Fresa", cat:"Frutas y verduras", kcal:32, protein:0.7, carbs:7.7, fat:0.3, fiber:2.0, sugar:4.9, sodium:1, satFat:0.0},
+  {name:"Sandía", cat:"Frutas y verduras", kcal:30, protein:0.6, carbs:8, fat:0.2, fiber:0.4, sugar:6.2, sodium:1, satFat:0.0},
+  {name:"Melón", cat:"Frutas y verduras", kcal:34, protein:0.8, carbs:8, fat:0.2, fiber:0.9, sugar:8.0, sodium:16, satFat:0.0},
+  {name:"Chirimoya", cat:"Frutas y verduras", kcal:75, protein:1.6, carbs:17.7, fat:0.7, fiber:3.0, sugar:15, sodium:5, satFat:0.1},
+  {name:"Granadilla", cat:"Frutas y verduras", kcal:81, protein:1.1, carbs:20, fat:0.4, fiber:3.3, sugar:12, sodium:5, satFat:0.0},
+  {name:"Lúcuma", cat:"Frutas y verduras", kcal:99, protein:1.5, carbs:25, fat:0.3, fiber:2.3, sugar:15, sodium:3, satFat:0.1},
+  {name:"Maracuyá", cat:"Frutas y verduras", kcal:97, protein:2.2, carbs:23, fat:0.7, fiber:10.4, sugar:11, sodium:28, satFat:0.1},
+  {name:"Aguaymanto", cat:"Frutas y verduras", kcal:54, protein:1.9, carbs:11, fat:0.2, fiber:4.9, sugar:8, sodium:3, satFat:0.0},
 
   // ---- Verduras ----
-  {name:"Brócoli (cocido)", cat:"Frutas y verduras", kcal:35, protein:2.4, carbs:7, fat:0.4},
-  {name:"Tomate", cat:"Frutas y verduras", kcal:18, protein:0.9, carbs:3.9, fat:0.2},
-  {name:"Cebolla", cat:"Frutas y verduras", kcal:40, protein:1.1, carbs:9.3, fat:0.1},
-  {name:"Zanahoria", cat:"Frutas y verduras", kcal:41, protein:0.9, carbs:10, fat:0.2},
-  {name:"Lechuga", cat:"Frutas y verduras", kcal:15, protein:1.4, carbs:2.9, fat:0.2},
-  {name:"Pepino", cat:"Frutas y verduras", kcal:15, protein:0.7, carbs:3.6, fat:0.1},
-  {name:"Espinaca (cocida)", cat:"Frutas y verduras", kcal:23, protein:2.9, carbs:3.6, fat:0.4},
-  {name:"Zapallo (cocido)", cat:"Frutas y verduras", kcal:26, protein:1, carbs:6.5, fat:0.1},
-  {name:"Vainita / ejote (cocida)", cat:"Frutas y verduras", kcal:35, protein:1.8, carbs:7.9, fat:0.1},
-  {name:"Betarraga (cocida)", cat:"Frutas y verduras", kcal:44, protein:1.7, carbs:10, fat:0.2},
-  {name:"Apio", cat:"Frutas y verduras", kcal:16, protein:0.7, carbs:3, fat:0.2},
-  {name:"Rocoto", cat:"Frutas y verduras", kcal:40, protein:1.5, carbs:8.8, fat:0.4},
-  {name:"Ají amarillo", cat:"Frutas y verduras", kcal:40, protein:1.5, carbs:8, fat:0.3},
-  {name:"Pimiento", cat:"Frutas y verduras", kcal:31, protein:1, carbs:6, fat:0.3},
+  {name:"Brócoli (cocido)", cat:"Frutas y verduras", kcal:35, protein:2.4, carbs:7, fat:0.4, fiber:3.3, sugar:1.4, sodium:33, satFat:0.1},
+  {name:"Tomate", cat:"Frutas y verduras", kcal:18, protein:0.9, carbs:3.9, fat:0.2, fiber:1.2, sugar:2.6, sodium:5, satFat:0.0},
+  {name:"Cebolla", cat:"Frutas y verduras", kcal:40, protein:1.1, carbs:9.3, fat:0.1, fiber:1.7, sugar:4.2, sodium:4, satFat:0.0},
+  {name:"Zanahoria", cat:"Frutas y verduras", kcal:41, protein:0.9, carbs:10, fat:0.2, fiber:2.8, sugar:4.7, sodium:69, satFat:0.0},
+  {name:"Lechuga", cat:"Frutas y verduras", kcal:15, protein:1.4, carbs:2.9, fat:0.2, fiber:1.3, sugar:0.8, sodium:28, satFat:0.0},
+  {name:"Pepino", cat:"Frutas y verduras", kcal:15, protein:0.7, carbs:3.6, fat:0.1, fiber:0.5, sugar:1.7, sodium:2, satFat:0.0},
+  {name:"Espinaca (cocida)", cat:"Frutas y verduras", kcal:23, protein:2.9, carbs:3.6, fat:0.4, fiber:2.4, sugar:0.4, sodium:70, satFat:0.1},
+  {name:"Zapallo (cocido)", cat:"Frutas y verduras", kcal:26, protein:1, carbs:6.5, fat:0.1, fiber:1.1, sugar:2.8, sodium:1, satFat:0.1},
+  {name:"Vainita / ejote (cocida)", cat:"Frutas y verduras", kcal:35, protein:1.8, carbs:7.9, fat:0.1, fiber:3.4, sugar:3.3, sodium:6, satFat:0.0},
+  {name:"Betarraga (cocida)", cat:"Frutas y verduras", kcal:44, protein:1.7, carbs:10, fat:0.2, fiber:2.0, sugar:6.8, sodium:78, satFat:0.0},
+  {name:"Apio", cat:"Frutas y verduras", kcal:16, protein:0.7, carbs:3, fat:0.2, fiber:1.6, sugar:1.3, sodium:80, satFat:0.0},
+  {name:"Rocoto", cat:"Frutas y verduras", kcal:40, protein:1.5, carbs:8.8, fat:0.4, fiber:1.5, sugar:4.3, sodium:9, satFat:0.0},
+  {name:"Ají amarillo", cat:"Frutas y verduras", kcal:40, protein:1.5, carbs:8, fat:0.3, fiber:1.5, sugar:5.0, sodium:9, satFat:0.0},
+  {name:"Pimiento", cat:"Frutas y verduras", kcal:31, protein:1, carbs:6, fat:0.3, fiber:2.1, sugar:4.2, sodium:4, satFat:0.1},
 
   // ---- Lácteos y grasas ----
-  {name:"Leche entera", cat:"Lácteos y grasas", kcal:61, protein:3.2, carbs:4.8, fat:3.3, serving:{label:"1 vaso", grams:200}},
-  {name:"Leche descremada", cat:"Lácteos y grasas", kcal:34, protein:3.4, carbs:5, fat:0.1},
-  {name:"Leche evaporada", cat:"Lácteos y grasas", kcal:134, protein:6.8, carbs:10, fat:7.6},
-  {name:"Yogur natural", cat:"Lácteos y grasas", kcal:61, protein:3.5, carbs:4.7, fat:3.3},
-  {name:"Yogur griego", cat:"Lácteos y grasas", kcal:97, protein:9, carbs:3.6, fat:5},
-  {name:"Queso fresco", cat:"Lácteos y grasas", kcal:264, protein:18, carbs:3.4, fat:21, serving:{label:"1 tajada", grams:30}},
-  {name:"Queso edam / andino", cat:"Lácteos y grasas", kcal:357, protein:25, carbs:1.4, fat:28},
-  {name:"Queso parmesano", cat:"Lácteos y grasas", kcal:431, protein:38, carbs:4, fat:29},
-  {name:"Manjar blanco", cat:"Lácteos y grasas", kcal:315, protein:6, carbs:56, fat:8},
-  {name:"Aceite de oliva / vegetal", cat:"Lácteos y grasas", kcal:884, protein:0, carbs:0, fat:100, serving:{label:"1 cucharada", grams:14}},
-  {name:"Mantequilla", cat:"Lácteos y grasas", kcal:717, protein:0.9, carbs:0.1, fat:81},
-  {name:"Mayonesa", cat:"Lácteos y grasas", kcal:680, protein:1, carbs:3, fat:75},
-  {name:"Almendras", cat:"Lácteos y grasas", kcal:579, protein:21, carbs:22, fat:50},
-  {name:"Maní", cat:"Lácteos y grasas", kcal:567, protein:25.8, carbs:16, fat:49},
-  {name:"Nueces", cat:"Lácteos y grasas", kcal:654, protein:15, carbs:14, fat:65},
-  {name:"Chía", cat:"Lácteos y grasas", kcal:486, protein:17, carbs:42, fat:31},
-  {name:"Ajonjolí / sésamo", cat:"Lácteos y grasas", kcal:573, protein:18, carbs:23, fat:50},
-  {name:"Pecanas", cat:"Lácteos y grasas", kcal:691, protein:9.2, carbs:13.9, fat:72},
-  {name:"Cashews (castañas de cajú)", cat:"Lácteos y grasas", kcal:553, protein:18.2, carbs:30.2, fat:43.9},
-  {name:"Aceitunas", cat:"Lácteos y grasas", kcal:116, protein:0.8, carbs:6, fat:10.9},
+  {name:"Leche entera", cat:"Lácteos y grasas", kcal:61, protein:3.2, carbs:4.8, fat:3.3, serving:{label:"1 vaso", grams:200}, fiber:0, sugar:4.8, sodium:43, satFat:1.9},
+  {name:"Leche descremada", cat:"Lácteos y grasas", kcal:34, protein:3.4, carbs:5, fat:0.1, fiber:0, sugar:5.0, sodium:42, satFat:0.1},
+  {name:"Leche evaporada", cat:"Lácteos y grasas", kcal:134, protein:6.8, carbs:10, fat:7.6, fiber:0, sugar:10, sodium:106, satFat:4.6},
+  {name:"Yogur natural", cat:"Lácteos y grasas", kcal:61, protein:3.5, carbs:4.7, fat:3.3, fiber:0, sugar:4.7, sodium:46, satFat:2.1},
+  {name:"Yogur griego", cat:"Lácteos y grasas", kcal:97, protein:9, carbs:3.6, fat:5, fiber:0, sugar:3.6, sodium:36, satFat:3.1},
+  {name:"Queso fresco", cat:"Lácteos y grasas", kcal:264, protein:18, carbs:3.4, fat:21, serving:{label:"1 tajada", grams:30}, fiber:0, sugar:3.4, sodium:350, satFat:13.0},
+  {name:"Queso edam / andino", cat:"Lácteos y grasas", kcal:357, protein:25, carbs:1.4, fat:28, fiber:0, sugar:1.4, sodium:800, satFat:18.0},
+  {name:"Queso parmesano", cat:"Lácteos y grasas", kcal:431, protein:38, carbs:4, fat:29, fiber:0, sugar:0.9, sodium:1500, satFat:19.0},
+  {name:"Manjar blanco", cat:"Lácteos y grasas", kcal:315, protein:6, carbs:56, fat:8, fiber:0, sugar:55, sodium:90, satFat:5.0},
+  {name:"Aceite de oliva / vegetal", cat:"Lácteos y grasas", kcal:884, protein:0, carbs:0, fat:100, serving:{label:"1 cucharada", grams:14}, fiber:0, sugar:0, sodium:0, satFat:14.0},
+  {name:"Mantequilla", cat:"Lácteos y grasas", kcal:717, protein:0.9, carbs:0.1, fat:81, fiber:0, sugar:0.1, sodium:640, satFat:51.0},
+  {name:"Mayonesa", cat:"Lácteos y grasas", kcal:680, protein:1, carbs:3, fat:75, fiber:0, sugar:1.5, sodium:550, satFat:12.0},
+  {name:"Almendras", cat:"Lácteos y grasas", kcal:579, protein:21, carbs:22, fat:50, fiber:12.5, sugar:4.4, sodium:1, satFat:3.8},
+  {name:"Maní", cat:"Lácteos y grasas", kcal:567, protein:25.8, carbs:16, fat:49, fiber:8.5, sugar:4.0, sodium:18, satFat:6.8},
+  {name:"Nueces", cat:"Lácteos y grasas", kcal:654, protein:15, carbs:14, fat:65, fiber:6.7, sugar:2.6, sodium:2, satFat:6.1},
+  {name:"Chía", cat:"Lácteos y grasas", kcal:486, protein:17, carbs:42, fat:31, fiber:34.0, sugar:0, sodium:16, satFat:3.3},
+  {name:"Ajonjolí / sésamo", cat:"Lácteos y grasas", kcal:573, protein:18, carbs:23, fat:50, fiber:11.8, sugar:0.3, sodium:11, satFat:7.0},
+  {name:"Pecanas", cat:"Lácteos y grasas", kcal:691, protein:9.2, carbs:13.9, fat:72, fiber:9.6, sugar:4.0, sodium:0, satFat:6.0},
+  {name:"Cashews (castañas de cajú)", cat:"Lácteos y grasas", kcal:553, protein:18.2, carbs:30.2, fat:43.9, fiber:3.3, sugar:5.9, sodium:12, satFat:7.8},
+  {name:"Aceitunas", cat:"Lácteos y grasas", kcal:116, protein:0.8, carbs:6, fat:10.9, fiber:3.2, sugar:0.5, sodium:1550, satFat:1.4},
 
   // ---- Platos peruanos ----
-  {name:"Ceviche de pescado", cat:"Platos peruanos", kcal:90, protein:16, carbs:5, fat:1.3},
-  {name:"Ceviche mixto", cat:"Platos peruanos", kcal:110, protein:15, carbs:8, fat:2.5},
-  {name:"Tiradito", cat:"Platos peruanos", kcal:95, protein:17, carbs:4, fat:1.5},
-  {name:"Lomo saltado (salteado, sin arroz)", cat:"Platos peruanos", kcal:180, protein:20, carbs:6, fat:9},
-  {name:"Lomo saltado con arroz y papas (plato completo)", cat:"Platos peruanos", kcal:185, protein:10, carbs:20, fat:8},
-  {name:"Causa limeña (rellena de pollo)", cat:"Platos peruanos", kcal:180, protein:5, carbs:22, fat:8},
-  {name:"Causa limeña (rellena de atún)", cat:"Platos peruanos", kcal:190, protein:6, carbs:20, fat:10},
-  {name:"Arroz con pollo", cat:"Platos peruanos", kcal:160, protein:9, carbs:18, fat:6},
-  {name:"Ají de gallina", cat:"Platos peruanos", kcal:190, protein:11, carbs:12, fat:12},
-  {name:"Tacu tacu (solo)", cat:"Platos peruanos", kcal:165, protein:5, carbs:26, fat:5},
-  {name:"Tacu tacu con lomo saltado", cat:"Platos peruanos", kcal:195, protein:12, carbs:20, fat:8},
-  {name:"Papa a la huancaína", cat:"Platos peruanos", kcal:175, protein:3, carbs:18, fat:11},
-  {name:"Tallarín saltado", cat:"Platos peruanos", kcal:145, protein:8, carbs:20, fat:4},
-  {name:"Tallarín verde", cat:"Platos peruanos", kcal:175, protein:7, carbs:22, fat:7},
-  {name:"Chaufa de pollo", cat:"Platos peruanos", kcal:175, protein:8, carbs:22, fat:6},
-  {name:"Chaufa mixto (mariscos/carne)", cat:"Platos peruanos", kcal:190, protein:10, carbs:22, fat:7},
-  {name:"Sopa criolla", cat:"Platos peruanos", kcal:90, protein:5, carbs:8, fat:4},
-  {name:"Seco de res", cat:"Platos peruanos", kcal:195, protein:16, carbs:8, fat:11},
-  {name:"Seco de cabrito", cat:"Platos peruanos", kcal:220, protein:18, carbs:6, fat:14},
-  {name:"Escabeche de pescado", cat:"Platos peruanos", kcal:160, protein:12, carbs:10, fat:8},
-  {name:"Anticuchos de corazón", cat:"Platos peruanos", kcal:200, protein:20, carbs:2, fat:12},
-  {name:"Tamal", cat:"Platos peruanos", kcal:220, protein:6, carbs:28, fat:9},
-  {name:"Tamalito verde", cat:"Platos peruanos", kcal:205, protein:7, carbs:26, fat:8},
-  {name:"Humita", cat:"Platos peruanos", kcal:180, protein:4, carbs:30, fat:5},
-  {name:"Pachamanca mixta", cat:"Platos peruanos", kcal:220, protein:17, carbs:8, fat:14},
-  {name:"Cau cau", cat:"Platos peruanos", kcal:130, protein:12, carbs:8, fat:6},
-  {name:"Carapulcra", cat:"Platos peruanos", kcal:175, protein:10, carbs:16, fat:8},
-  {name:"Parihuela", cat:"Platos peruanos", kcal:90, protein:12, carbs:6, fat:2},
-  {name:"Chupe de camarones", cat:"Platos peruanos", kcal:110, protein:8, carbs:9, fat:5},
-  {name:"Rocoto relleno", cat:"Platos peruanos", kcal:190, protein:9, carbs:12, fat:12},
-  {name:"Olluco con carne", cat:"Platos peruanos", kcal:130, protein:9, carbs:12, fat:5},
-  {name:"Cuy chactado", cat:"Platos peruanos", kcal:260, protein:25, carbs:2, fat:17},
-  {name:"Juane", cat:"Platos peruanos", kcal:200, protein:10, carbs:28, fat:6},
-  {name:"Wantán frito", cat:"Platos peruanos", kcal:300, protein:8, carbs:32, fat:16},
-  {name:"Sopa wantán", cat:"Platos peruanos", kcal:60, protein:5, carbs:6, fat:2},
-  {name:"Salchipapa", cat:"Platos peruanos", kcal:260, protein:6, carbs:28, fat:13},
+  {name:"Ceviche de pescado", cat:"Platos peruanos", kcal:90, protein:16, carbs:5, fat:1.3, fiber:0.5, sugar:1, sodium:400, satFat:0.3},
+  {name:"Ceviche mixto", cat:"Platos peruanos", kcal:110, protein:15, carbs:8, fat:2.5, fiber:0.8, sugar:1.5, sodium:450, satFat:0.5},
+  {name:"Tiradito", cat:"Platos peruanos", kcal:95, protein:17, carbs:4, fat:1.5, fiber:0.3, sugar:1, sodium:380, satFat:0.3},
+  {name:"Lomo saltado (salteado, sin arroz)", cat:"Platos peruanos", kcal:180, protein:20, carbs:6, fat:9, fiber:1.0, sugar:2, sodium:500, satFat:3.0},
+  {name:"Lomo saltado con arroz y papas (plato completo)", cat:"Platos peruanos", kcal:185, protein:10, carbs:20, fat:8, fiber:1.2, sugar:1.5, sodium:400, satFat:2.5},
+  {name:"Causa limeña (rellena de pollo)", cat:"Platos peruanos", kcal:180, protein:5, carbs:22, fat:8, fiber:1.5, sugar:1, sodium:350, satFat:1.5},
+  {name:"Causa limeña (rellena de atún)", cat:"Platos peruanos", kcal:190, protein:6, carbs:20, fat:10, fiber:1.5, sugar:1, sodium:400, satFat:1.8},
+  {name:"Arroz con pollo", cat:"Platos peruanos", kcal:160, protein:9, carbs:18, fat:6, fiber:1.0, sugar:1, sodium:380, satFat:1.8},
+  {name:"Ají de gallina", cat:"Platos peruanos", kcal:190, protein:11, carbs:12, fat:12, fiber:1.0, sugar:2, sodium:420, satFat:3.5},
+  {name:"Tacu tacu (solo)", cat:"Platos peruanos", kcal:165, protein:5, carbs:26, fat:5, fiber:3.0, sugar:0.5, sodium:380, satFat:1.2},
+  {name:"Tacu tacu con lomo saltado", cat:"Platos peruanos", kcal:195, protein:12, carbs:20, fat:8, fiber:2.5, sugar:1, sodium:420, satFat:2.5},
+  {name:"Papa a la huancaína", cat:"Platos peruanos", kcal:175, protein:3, carbs:18, fat:11, fiber:1.2, sugar:1.5, sodium:350, satFat:3.0},
+  {name:"Tallarín saltado", cat:"Platos peruanos", kcal:145, protein:8, carbs:20, fat:4, fiber:1.0, sugar:2, sodium:450, satFat:1.0},
+  {name:"Tallarín verde", cat:"Platos peruanos", kcal:175, protein:7, carbs:22, fat:7, fiber:1.5, sugar:1, sodium:400, satFat:3.0},
+  {name:"Chaufa de pollo", cat:"Platos peruanos", kcal:175, protein:8, carbs:22, fat:6, fiber:0.8, sugar:1.5, sodium:480, satFat:1.5},
+  {name:"Chaufa mixto (mariscos/carne)", cat:"Platos peruanos", kcal:190, protein:10, carbs:22, fat:7, fiber:0.8, sugar:1.5, sodium:500, satFat:1.8},
+  {name:"Sopa criolla", cat:"Platos peruanos", kcal:90, protein:5, carbs:8, fat:4, fiber:0.5, sugar:1.5, sodium:380, satFat:1.5},
+  {name:"Seco de res", cat:"Platos peruanos", kcal:195, protein:16, carbs:8, fat:11, fiber:1.5, sugar:1, sodium:420, satFat:3.5},
+  {name:"Seco de cabrito", cat:"Platos peruanos", kcal:220, protein:18, carbs:6, fat:14, fiber:1.2, sugar:1, sodium:400, satFat:5.0},
+  {name:"Escabeche de pescado", cat:"Platos peruanos", kcal:160, protein:12, carbs:10, fat:8, fiber:1.0, sugar:2, sodium:400, satFat:1.5},
+  {name:"Anticuchos de corazón", cat:"Platos peruanos", kcal:200, protein:20, carbs:2, fat:12, fiber:0.2, sugar:1, sodium:350, satFat:4.0},
+  {name:"Tamal", cat:"Platos peruanos", kcal:220, protein:6, carbs:28, fat:9, fiber:1.5, sugar:1, sodium:350, satFat:3.0},
+  {name:"Tamalito verde", cat:"Platos peruanos", kcal:205, protein:7, carbs:26, fat:8, fiber:2.0, sugar:1, sodium:350, satFat:2.5},
+  {name:"Humita", cat:"Platos peruanos", kcal:180, protein:4, carbs:30, fat:5, fiber:2.0, sugar:3, sodium:250, satFat:1.5},
+  {name:"Pachamanca mixta", cat:"Platos peruanos", kcal:220, protein:17, carbs:8, fat:14, fiber:1.0, sugar:0.5, sodium:400, satFat:5.0},
+  {name:"Cau cau", cat:"Platos peruanos", kcal:130, protein:12, carbs:8, fat:6, fiber:1.0, sugar:1, sodium:380, satFat:2.0},
+  {name:"Carapulcra", cat:"Platos peruanos", kcal:175, protein:10, carbs:16, fat:8, fiber:2.0, sugar:1, sodium:400, satFat:2.5},
+  {name:"Parihuela", cat:"Platos peruanos", kcal:90, protein:12, carbs:6, fat:2, fiber:0.5, sugar:1, sodium:450, satFat:0.5},
+  {name:"Chupe de camarones", cat:"Platos peruanos", kcal:110, protein:8, carbs:9, fat:5, fiber:0.8, sugar:2, sodium:400, satFat:2.0},
+  {name:"Rocoto relleno", cat:"Platos peruanos", kcal:190, protein:9, carbs:12, fat:12, fiber:1.5, sugar:3, sodium:380, satFat:4.0},
+  {name:"Olluco con carne", cat:"Platos peruanos", kcal:130, protein:9, carbs:12, fat:5, fiber:2.0, sugar:1, sodium:350, satFat:1.8},
+  {name:"Cuy chactado", cat:"Platos peruanos", kcal:260, protein:25, carbs:2, fat:17, fiber:0, sugar:0, sodium:300, satFat:5.0},
+  {name:"Juane", cat:"Platos peruanos", kcal:200, protein:10, carbs:28, fat:6, fiber:1.5, sugar:1, sodium:350, satFat:1.8},
+  {name:"Wantán frito", cat:"Platos peruanos", kcal:300, protein:8, carbs:32, fat:16, fiber:1.0, sugar:2, sodium:450, satFat:4.0},
+  {name:"Sopa wantán", cat:"Platos peruanos", kcal:60, protein:5, carbs:6, fat:2, fiber:0.5, sugar:1, sodium:500, satFat:0.8},
+  {name:"Salchipapa", cat:"Platos peruanos", kcal:260, protein:6, carbs:28, fat:13, fiber:2.0, sugar:1, sodium:480, satFat:3.5},
 
   // ---- Desayunos y sánguches ----
-  {name:"Pan con palta", cat:"Desayunos", kcal:235, protein:6, carbs:28, fat:11},
-  {name:"Pan con huevo", cat:"Desayunos", kcal:260, protein:12, carbs:28, fat:12},
-  {name:"Pan con pollo", cat:"Desayunos", kcal:250, protein:14, carbs:30, fat:8},
-  {name:"Pan con chicharrón", cat:"Desayunos", kcal:320, protein:12, carbs:28, fat:18},
-  {name:"Pan con jamón y queso", cat:"Desayunos", kcal:280, protein:13, carbs:30, fat:12},
-  {name:"Quinua con leche", cat:"Desayunos", kcal:95, protein:3.8, carbs:14, fat:2.5},
-  {name:"Café con leche", cat:"Desayunos", kcal:55, protein:2.8, carbs:5, fat:2.5},
-  {name:"Jugo de naranja natural", cat:"Desayunos", kcal:45, protein:0.7, carbs:10, fat:0.2},
-  {name:"Emoliente", cat:"Desayunos", kcal:20, protein:0.2, carbs:4, fat:0},
+  {name:"Pan con palta", cat:"Desayunos", kcal:235, protein:6, carbs:28, fat:11, fiber:3.0, sugar:1.5, sodium:350, satFat:1.8},
+  {name:"Pan con huevo", cat:"Desayunos", kcal:260, protein:12, carbs:28, fat:12, fiber:1.8, sugar:2, sodium:420, satFat:3.0},
+  {name:"Pan con pollo", cat:"Desayunos", kcal:250, protein:14, carbs:30, fat:8, fiber:1.5, sugar:2, sodium:450, satFat:2.0},
+  {name:"Pan con chicharrón", cat:"Desayunos", kcal:320, protein:12, carbs:28, fat:18, fiber:1.8, sugar:2, sodium:500, satFat:5.5},
+  {name:"Pan con jamón y queso", cat:"Desayunos", kcal:280, protein:13, carbs:30, fat:12, fiber:1.5, sugar:3, sodium:650, satFat:4.5},
+  {name:"Quinua con leche", cat:"Desayunos", kcal:95, protein:3.8, carbs:14, fat:2.5, fiber:1.0, sugar:5, sodium:30, satFat:1.2},
+  {name:"Café con leche", cat:"Desayunos", kcal:55, protein:2.8, carbs:5, fat:2.5, fiber:0, sugar:4, sodium:35, satFat:1.5},
+  {name:"Jugo de naranja natural", cat:"Desayunos", kcal:45, protein:0.7, carbs:10, fat:0.2, fiber:0.2, sugar:8, sodium:1, satFat:0.0},
+  {name:"Emoliente", cat:"Desayunos", kcal:20, protein:0.2, carbs:4, fat:0, fiber:0.3, sugar:3, sodium:5, satFat:0.0},
 
   // ---- Postres y bebidas ----
-  {name:"Picarones (con miel)", cat:"Platos peruanos", kcal:290, protein:3, carbs:55, fat:7},
-  {name:"Suspiro a la limeña", cat:"Platos peruanos", kcal:350, protein:4, carbs:55, fat:13},
-  {name:"Mazamorra morada", cat:"Platos peruanos", kcal:120, protein:1, carbs:28, fat:0.3},
-  {name:"Arroz con leche", cat:"Platos peruanos", kcal:150, protein:3.5, carbs:25, fat:4},
-  {name:"Alfajor", cat:"Platos peruanos", kcal:430, protein:5, carbs:60, fat:19},
-  {name:"Turrón de Doña Pepa", cat:"Platos peruanos", kcal:400, protein:5, carbs:70, fat:12},
-  {name:"Chicha morada", cat:"Platos peruanos", kcal:45, protein:0.1, carbs:11, fat:0},
-  {name:"Gaseosa (cola)", cat:"Snacks y otros", kcal:42, protein:0, carbs:10.6, fat:0},
-  {name:"Cerveza", cat:"Snacks y otros", kcal:43, protein:0.5, carbs:3.6, fat:0},
-  {name:"Chocolate con leche", cat:"Snacks y otros", kcal:535, protein:7.6, carbs:59, fat:30},
-  {name:"Galletas soda", cat:"Snacks y otros", kcal:440, protein:9, carbs:70, fat:13},
-  {name:"Galletas dulces rellenas", cat:"Snacks y otros", kcal:480, protein:5, carbs:68, fat:20},
-  {name:"Papas fritas de bolsa (chips)", cat:"Snacks y otros", kcal:536, protein:6, carbs:53, fat:35},
+  {name:"Picarones (con miel)", cat:"Platos peruanos", kcal:290, protein:3, carbs:55, fat:7, fiber:1.0, sugar:30, sodium:150, satFat:1.0},
+  {name:"Suspiro a la limeña", cat:"Platos peruanos", kcal:350, protein:4, carbs:55, fat:13, fiber:0.3, sugar:45, sodium:90, satFat:6.0},
+  {name:"Mazamorra morada", cat:"Platos peruanos", kcal:120, protein:1, carbs:28, fat:0.3, fiber:0.8, sugar:22, sodium:10, satFat:0.1},
+  {name:"Arroz con leche", cat:"Platos peruanos", kcal:150, protein:3.5, carbs:25, fat:4, fiber:0.3, sugar:18, sodium:50, satFat:2.5},
+  {name:"Alfajor", cat:"Platos peruanos", kcal:430, protein:5, carbs:60, fat:19, fiber:1.0, sugar:40, sodium:150, satFat:9.0},
+  {name:"Turrón de Doña Pepa", cat:"Platos peruanos", kcal:400, protein:5, carbs:70, fat:12, fiber:1.5, sugar:45, sodium:100, satFat:4.0},
+  {name:"Chicha morada", cat:"Platos peruanos", kcal:45, protein:0.1, carbs:11, fat:0, fiber:0.2, sugar:10, sodium:5, satFat:0.0},
+  {name:"Gaseosa (cola)", cat:"Snacks y otros", kcal:42, protein:0, carbs:10.6, fat:0, fiber:0, sugar:10.6, sodium:5, satFat:0.0},
+  {name:"Cerveza", cat:"Snacks y otros", kcal:43, protein:0.5, carbs:3.6, fat:0, fiber:0, sugar:0, sodium:4, satFat:0.0},
+  {name:"Chocolate con leche", cat:"Snacks y otros", kcal:535, protein:7.6, carbs:59, fat:30, fiber:3.4, sugar:51, sodium:79, satFat:18.0},
+  {name:"Galletas soda", cat:"Snacks y otros", kcal:440, protein:9, carbs:70, fat:13, fiber:2.5, sugar:5, sodium:850, satFat:3.5},
+  {name:"Galletas dulces rellenas", cat:"Snacks y otros", kcal:480, protein:5, carbs:68, fat:20, fiber:2.0, sugar:32, sodium:300, satFat:8.0},
+  {name:"Papas fritas de bolsa (chips)", cat:"Snacks y otros", kcal:536, protein:6, carbs:53, fat:35, fiber:4.4, sugar:0.3, sodium:525, satFat:4.3},
 
   // ---- Comida rápida ----
-  {name:"Hamburguesa completa (pan, carne, queso)", cat:"Snacks y otros", kcal:280, protein:14, carbs:26, fat:13},
-  {name:"Pizza (porción con queso)", cat:"Snacks y otros", kcal:266, protein:11, carbs:33, fat:10},
-  {name:"Hot dog completo", cat:"Snacks y otros", kcal:290, protein:11, carbs:24, fat:17},
+  {name:"Hamburguesa completa (pan, carne, queso)", cat:"Snacks y otros", kcal:280, protein:14, carbs:26, fat:13, fiber:1.5, sugar:5, sodium:500, satFat:5.0},
+  {name:"Pizza (porción con queso)", cat:"Snacks y otros", kcal:266, protein:11, carbs:33, fat:10, fiber:2.0, sugar:3.5, sodium:600, satFat:4.5},
+  {name:"Hot dog completo", cat:"Snacks y otros", kcal:290, protein:11, carbs:24, fat:17, fiber:1.0, sugar:4, sodium:700, satFat:6.0},
 ];
 
 // ---------- Config / storage ----------
@@ -1274,6 +1324,7 @@ function ensureDayExtras(entries) {
   if (typeof entries.agua !== 'number') entries.agua = 0;
   if (!Array.isArray(entries.actividad)) entries.actividad = [];
   if (typeof entries.nota !== 'string') entries.nota = '';
+  if (!Array.isArray(entries.meds)) entries.meds = [];
   return entries;
 }
 
@@ -1388,13 +1439,15 @@ document.getElementById('hoyTitle').addEventListener('click', () => {
 // ---------- Render: summary ----------
 function renderSummary() {
   const entries = getSelectedEntries();
-  let kcal = 0, protein = 0, carbs = 0, fat = 0;
+  let kcal = 0, protein = 0, carbs = 0, fat = 0, fiber = 0, sugar = 0, sodium = 0, satFat = 0;
   ALL_MEAL_KEYS.forEach(k => {
     entries[k].forEach(item => {
       kcal += item.kcal; protein += item.protein; carbs += item.carbs; fat += item.fat;
+      fiber += item.fiber || 0; sugar += item.sugar || 0; sodium += item.sodium || 0; satFat += item.satFat || 0;
     });
   });
   kcal = Math.round(kcal); protein = round1(protein); carbs = round1(carbs); fat = round1(fat);
+  fiber = round1(fiber); sugar = round1(sugar); sodium = Math.round(sodium); satFat = round1(satFat);
 
   // El ejercicio registrado en "Actividad" se suma a la meta de calorías
   // del día (si te mueves más, puedes comer un poco más), igual que Fitia.
@@ -1417,7 +1470,25 @@ function renderSummary() {
 
   renderWater(entries);
   renderActivity(entries);
+  renderMeds(entries);
   document.getElementById('dayNotes').value = entries.nota || '';
+
+  // ---- Otros nutrientes ----
+  // Fibra: mientras más cerca de la meta, mejor (igual que los macros).
+  // Azúcares / sodio / grasas saturadas: son límites — pasarse se marca en
+  // rojo con la misma clase ".over" que ya usan las demás barras.
+  const sugarGoal = Math.round(goals.kcal * 0.10 / 4);
+  const satFatGoal = Math.round(goals.kcal * 0.10 / 9);
+  document.getElementById('fiberConsumed').textContent = fiber;
+  document.getElementById('sugarConsumed').textContent = sugar;
+  document.getElementById('sugarGoal').textContent = sugarGoal;
+  document.getElementById('sodiumConsumed').textContent = sodium;
+  document.getElementById('satFatConsumed').textContent = satFat;
+  document.getElementById('satFatGoal').textContent = satFatGoal;
+  setFill('fiberFill', fiber, 30);
+  setFill('sugarFill', sugar, sugarGoal);
+  setFill('sodiumFill', sodium, 2300);
+  setFill('satFatFill', satFat, satFatGoal);
 }
 
 // ---------- Agua ----------
@@ -1509,6 +1580,73 @@ function openActivitySheet() {
     ensureMealKeys(diary[key]);
     ensureDayExtras(diary[key]);
     diary[key].actividad.push({ id: makeId(), name, kcal });
+    saveDiary(diary);
+    pushDiaryDayToCloud(key, diary[key]);
+    closeSheet();
+    renderSummary();
+  });
+}
+
+// ---------- Meds y Suplementos ----------
+function renderMeds(entries) {
+  const items = entries.meds || [];
+  const wrap = document.getElementById('medsItems');
+  wrap.innerHTML = '';
+  items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'food-item';
+    row.innerHTML = `
+      <div>
+        <div class="food-item-name">${escapeHtml(item.name)}</div>
+        ${item.dose ? `<div class="food-item-detail">${escapeHtml(item.dose)}</div>` : ''}
+      </div>
+      <button class="delete-btn" data-med-id="${item.id}" aria-label="Eliminar">✕</button>
+    `;
+    wrap.appendChild(row);
+  });
+}
+
+document.getElementById('medsItems').addEventListener('click', (e) => {
+  const btn = e.target.closest('.delete-btn');
+  if (!btn) return;
+  const diary = loadDiary();
+  const key = selectedDate;
+  if (!diary[key]) return;
+  diary[key].meds = (diary[key].meds || []).filter(i => i.id !== btn.dataset.medId);
+  saveDiary(diary);
+  pushDiaryDayToCloud(key, diary[key]);
+  renderSummary();
+});
+
+document.getElementById('addMedBtn').addEventListener('click', openMedSheet);
+
+function openMedSheet() {
+  sheetTitle.textContent = 'Agregar medicamento / suplemento';
+  sheetBack.classList.add('hidden');
+  sheetBody.innerHTML = `
+    <div class="field">
+      <label>Nombre</label>
+      <input type="text" class="form-input" id="medName" placeholder="Ej. Multivitamínico, Omega 3, Paracetamol" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Dosis (opcional)</label>
+      <input type="text" class="form-input" id="medDose" placeholder="Ej. 1 tableta, 500mg" autocomplete="off">
+    </div>
+    <button class="btn-primary" id="confirmMedBtn">Agregar</button>
+  `;
+  showOverlay(sheetOverlay);
+  setTimeout(() => document.getElementById('medName').focus(), 250);
+
+  document.getElementById('confirmMedBtn').addEventListener('click', () => {
+    const name = document.getElementById('medName').value.trim();
+    const dose = document.getElementById('medDose').value.trim();
+    if (!name) return;
+    const diary = loadDiary();
+    const key = selectedDate;
+    if (!diary[key]) diary[key] = {};
+    ensureMealKeys(diary[key]);
+    ensureDayExtras(diary[key]);
+    diary[key].meds.push({ id: makeId(), name, dose });
     saveDiary(diary);
     pushDiaryDayToCloud(key, diary[key]);
     closeSheet();
@@ -1841,6 +1979,10 @@ function renderQuantityView() {
       protein: food.protein * factor,
       carbs: food.carbs * factor,
       fat: food.fat * factor,
+      fiber: (food.fiber || 0) * factor,
+      sugar: (food.sugar || 0) * factor,
+      sodium: (food.sodium || 0) * factor,
+      satFat: (food.satFat || 0) * factor,
     });
   });
 }
@@ -1892,7 +2034,7 @@ function renderManualView() {
     const carbs = parseFloat(document.getElementById('manCarbs').value) || 0;
     const fat = parseFloat(document.getElementById('manFat').value) || 0;
 
-    addEntry({ id: makeId(), name, grams, kcal, protein, carbs, fat });
+    addEntry({ id: makeId(), name, grams, kcal, protein, carbs, fat, fiber: 0, sugar: 0, sodium: 0, satFat: 0 });
   });
 }
 
@@ -1901,6 +2043,7 @@ function addEntry(entry) {
   const key = selectedDate;
   if (!diary[key]) diary[key] = {};
   ensureMealKeys(diary[key]);
+  ensureDayExtras(diary[key]);
   diary[key][currentSheetMeal].push(entry);
   saveDiary(diary);
   pushDiaryDayToCloud(key, diary[key]);
