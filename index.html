@@ -581,6 +581,34 @@
   .week-day .wdot.has { background: var(--gold-dim); }
   .week-day.selected .wdot.has { background: var(--gold); }
 
+  .water-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 16px 14px;
+    margin-bottom: 14px;
+  }
+  .water-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 14px;
+  }
+  .water-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card-2);
+    color: var(--gold);
+    font-size: 20px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .water-btn:active { background: #262629; }
+  #waterGlassesLabel { font-size: 15px; font-weight: 700; min-width: 74px; text-align: center; }
+
   .app-hidden { display: none !important; }
 
   .auth-screen {
@@ -737,6 +765,33 @@
     </section>
 
     <section id="mealsContainer"></section>
+
+    <section class="water-card">
+      <div class="meal-header">
+        <h3>💧 Agua</h3>
+        <span class="meal-kcal" id="waterLabel">0 / 2.5 L</span>
+      </div>
+      <div class="progress-bar small"><div class="progress-fill" id="waterFill"></div></div>
+      <div class="water-controls">
+        <button class="water-btn" id="waterMinus" aria-label="Quitar vaso">−</button>
+        <span id="waterGlassesLabel">0 vasos</span>
+        <button class="water-btn" id="waterPlus" aria-label="Agregar vaso">+</button>
+      </div>
+    </section>
+
+    <section class="meal-card">
+      <div class="meal-header">
+        <h3>🔥 Actividad</h3>
+        <span class="meal-kcal" id="activityKcalLabel">0 kcal</span>
+      </div>
+      <div class="meal-items" id="activityItems"></div>
+      <button class="add-food-btn" id="addActivityBtn">+ Agregar actividad</button>
+    </section>
+
+    <section class="meal-card">
+      <h3 style="margin:0 0 10px;">📝 Notas</h3>
+      <textarea id="dayNotes" class="form-input" style="min-height:70px;resize:vertical;width:100%;font-family:inherit;" placeholder="Escribe algo sobre tu día..."></textarea>
+    </section>
   </main>
 </div>
 
@@ -1213,10 +1268,20 @@ function ensureMealKeys(entries) {
   return entries;
 }
 
+// Agua (vasos), actividad (ejercicio, suma a la meta de calorías) y notas
+// del día — igual que Meal keys, con valores por defecto seguros.
+function ensureDayExtras(entries) {
+  if (typeof entries.agua !== 'number') entries.agua = 0;
+  if (!Array.isArray(entries.actividad)) entries.actividad = [];
+  if (typeof entries.nota !== 'string') entries.nota = '';
+  return entries;
+}
+
 function getEntriesForDate(key) {
   const diary = loadDiary();
   if (!diary[key]) diary[key] = {};
   ensureMealKeys(diary[key]);
+  ensureDayExtras(diary[key]);
   saveDiary(diary);
   return diary[key];
 }
@@ -1255,10 +1320,21 @@ function parseDateKey(key) {
 }
 
 // ---------- Render: header date ----------
+const WEEKDAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+function formatDayTitle(key) {
+  const today = todayKey();
+  if (key === today) return 'Hoy';
+  const diffDays = Math.round((parseDateKey(key) - parseDateKey(today)) / 86400000);
+  if (diffDays === 1) return 'Mañana';
+  if (diffDays === -1) return 'Ayer';
+  return WEEKDAY_NAMES[parseDateKey(key).getDay()];
+}
+
 function renderDate() {
   const d = parseDateKey(selectedDate);
   const label = d.toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
   document.getElementById('dateLabel').textContent = label;
+  document.getElementById('hoyTitle').textContent = formatDayTitle(selectedDate);
 }
 
 // ---------- Render: week strip ----------
@@ -1320,8 +1396,13 @@ function renderSummary() {
   });
   kcal = Math.round(kcal); protein = round1(protein); carbs = round1(carbs); fat = round1(fat);
 
+  // El ejercicio registrado en "Actividad" se suma a la meta de calorías
+  // del día (si te mueves más, puedes comer un poco más), igual que Fitia.
+  const activityKcal = Math.round((entries.actividad || []).reduce((s, i) => s + i.kcal, 0));
+  const adjustedKcalGoal = goals.kcal + activityKcal;
+
   document.getElementById('kcalConsumed').textContent = kcal;
-  document.getElementById('kcalGoal').textContent = goals.kcal;
+  document.getElementById('kcalGoal').textContent = adjustedKcalGoal;
   document.getElementById('proteinConsumed').textContent = protein;
   document.getElementById('proteinGoal').textContent = goals.protein;
   document.getElementById('carbsConsumed').textContent = carbs;
@@ -1329,11 +1410,128 @@ function renderSummary() {
   document.getElementById('fatConsumed').textContent = fat;
   document.getElementById('fatGoal').textContent = goals.fat;
 
-  setFill('kcalFill', kcal, goals.kcal);
+  setFill('kcalFill', kcal, adjustedKcalGoal);
   setFill('proteinFill', protein, goals.protein);
   setFill('carbsFill', carbs, goals.carbs);
   setFill('fatFill', fat, goals.fat);
+
+  renderWater(entries);
+  renderActivity(entries);
+  document.getElementById('dayNotes').value = entries.nota || '';
 }
+
+// ---------- Agua ----------
+const WATER_GOAL_ML = 2500;
+const GLASS_ML = 250;
+
+function renderWater(entries) {
+  const glasses = entries.agua || 0;
+  const ml = glasses * GLASS_ML;
+  document.getElementById('waterLabel').textContent = `${(ml / 1000).toFixed(1).replace('.0', '')} / ${WATER_GOAL_ML / 1000} L`;
+  document.getElementById('waterGlassesLabel').textContent = `${glasses} vaso${glasses === 1 ? '' : 's'}`;
+  setFill('waterFill', ml, WATER_GOAL_ML);
+}
+
+function changeWater(delta) {
+  const diary = loadDiary();
+  const key = selectedDate;
+  if (!diary[key]) diary[key] = {};
+  ensureMealKeys(diary[key]);
+  ensureDayExtras(diary[key]);
+  diary[key].agua = Math.max(0, (diary[key].agua || 0) + delta);
+  saveDiary(diary);
+  pushDiaryDayToCloud(key, diary[key]);
+  renderSummary();
+}
+
+document.getElementById('waterPlus').addEventListener('click', () => changeWater(1));
+document.getElementById('waterMinus').addEventListener('click', () => changeWater(-1));
+
+// ---------- Actividad ----------
+function renderActivity(entries) {
+  const items = entries.actividad || [];
+  const totalKcal = Math.round(items.reduce((s, i) => s + i.kcal, 0));
+  document.getElementById('activityKcalLabel').textContent = `${totalKcal} kcal`;
+  const wrap = document.getElementById('activityItems');
+  wrap.innerHTML = '';
+  items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'food-item';
+    row.innerHTML = `
+      <div>
+        <div class="food-item-name">${escapeHtml(item.name)}</div>
+        <div class="food-item-detail">${Math.round(item.kcal)} kcal quemadas</div>
+      </div>
+      <button class="delete-btn" data-activity-id="${item.id}" aria-label="Eliminar">✕</button>
+    `;
+    wrap.appendChild(row);
+  });
+}
+
+document.getElementById('activityItems').addEventListener('click', (e) => {
+  const btn = e.target.closest('.delete-btn');
+  if (!btn) return;
+  const diary = loadDiary();
+  const key = selectedDate;
+  if (!diary[key]) return;
+  diary[key].actividad = (diary[key].actividad || []).filter(i => i.id !== btn.dataset.activityId);
+  saveDiary(diary);
+  pushDiaryDayToCloud(key, diary[key]);
+  renderSummary();
+});
+
+document.getElementById('addActivityBtn').addEventListener('click', openActivitySheet);
+
+function openActivitySheet() {
+  sheetTitle.textContent = 'Agregar actividad';
+  sheetBack.classList.add('hidden');
+  sheetBody.innerHTML = `
+    <div class="field">
+      <label>Actividad</label>
+      <input type="text" class="form-input" id="actName" placeholder="Ej. Correr, gimnasio, fútbol" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Calorías quemadas</label>
+      <input type="number" class="form-input" id="actKcal" inputmode="numeric" placeholder="0" min="0">
+    </div>
+    <button class="btn-primary" id="confirmActivityBtn">Agregar</button>
+  `;
+  showOverlay(sheetOverlay);
+  setTimeout(() => document.getElementById('actName').focus(), 250);
+
+  document.getElementById('confirmActivityBtn').addEventListener('click', () => {
+    const name = document.getElementById('actName').value.trim();
+    const kcal = parseFloat(document.getElementById('actKcal').value) || 0;
+    if (!name || kcal <= 0) return;
+    const diary = loadDiary();
+    const key = selectedDate;
+    if (!diary[key]) diary[key] = {};
+    ensureMealKeys(diary[key]);
+    ensureDayExtras(diary[key]);
+    diary[key].actividad.push({ id: makeId(), name, kcal });
+    saveDiary(diary);
+    pushDiaryDayToCloud(key, diary[key]);
+    closeSheet();
+    renderSummary();
+  });
+}
+
+// ---------- Notas ----------
+let notesSaveTimer = null;
+document.getElementById('dayNotes').addEventListener('input', (e) => {
+  clearTimeout(notesSaveTimer);
+  const value = e.target.value;
+  const key = selectedDate;
+  notesSaveTimer = setTimeout(() => {
+    const diary = loadDiary();
+    if (!diary[key]) diary[key] = {};
+    ensureMealKeys(diary[key]);
+    ensureDayExtras(diary[key]);
+    diary[key].nota = value;
+    saveDiary(diary);
+    pushDiaryDayToCloud(key, diary[key]);
+  }, 600);
+});
 
 function setFill(id, value, goal) {
   const el = document.getElementById(id);
