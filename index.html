@@ -481,6 +481,16 @@
     color: #1a1400;
   }
 
+  .hero-image {
+    width: 100%;
+    aspect-ratio: 16/10;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    margin-bottom: 18px;
+    display: block;
+    background: var(--card);
+  }
+
   .calc-intro {
     text-align: center;
     margin: 4px 0 20px;
@@ -1593,7 +1603,7 @@ function renderChoiceCards(options, selectedKey, onPick) {
 // ---- Paso 1: Objetivo ----
 function renderCalcObjetivo() {
   setCalcStep(1, 6, '¿Cuál es tu objetivo?', false);
-  calcBody.innerHTML = '';
+  calcBody.innerHTML = '<img class="hero-image" src="images/hero-bowl.jpg" alt="" loading="lazy">';
   const options = [
     { key: 'perder', icon: '🔥', title: 'Perder grasa', desc: 'Reduce calorías conservando músculo' },
     { key: 'ganar', icon: '💪', title: 'Ganar músculo', desc: 'Aumenta peso y fuerza' },

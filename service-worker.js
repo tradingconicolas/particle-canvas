@@ -1,11 +1,12 @@
-const CACHE_NAME = 'mi-nutricion-v3';
+const CACHE_NAME = 'mi-nutricion-v4';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/apple-touch-icon.png'
+  './icons/apple-touch-icon.png',
+  './images/hero-bowl.jpg'
 ];
 
 self.addEventListener('install', (event) => {
