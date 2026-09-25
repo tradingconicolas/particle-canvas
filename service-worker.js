@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mi-nutricion-v2';
+const CACHE_NAME = 'mi-nutricion-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -38,18 +38,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Red primero, caché como respaldo offline. Antes era "caché primero" y
+  // eso dejaba la app pegada en versiones viejas después de cada
+  // actualización (había que recargar varias veces para verla). Como la
+  // app es chica, pedirla siempre a la red cuando hay internet no cuesta
+  // nada y garantiza que siempre se vea la última versión; offline sigue
+  // funcionando igual, sirviendo lo último que se guardó en caché.
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached || fetchPromise;
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
