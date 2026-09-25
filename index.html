@@ -624,6 +624,69 @@
     line-height: 1.5;
   }
 
+  .food-item-info { flex: 1; cursor: pointer; min-width: 0; }
+
+  .macro-pct-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 20px;
+    overflow: hidden;
+    margin: 16px 0 8px;
+    background: var(--card-2);
+  }
+  .macro-pct-legend {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+  }
+  .macro-pct-legend .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+  }
+  .nutri-toggle {
+    width: 100%;
+    background: var(--card-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 700;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+    cursor: pointer;
+  }
+  .nutri-detail { margin-top: 14px; }
+  .nutri-row { margin-bottom: 12px; }
+  .nutri-row.nutri-sub { padding-left: 16px; }
+  .nutri-row-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13.5px;
+    margin-bottom: 5px;
+  }
+  .nutri-row-top span:first-child { color: var(--text-dim); }
+  .btn-danger-outline {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(255, 107, 107, 0.4);
+    color: var(--danger);
+    font-size: 15px;
+    font-weight: 700;
+    padding: 13px;
+    border-radius: var(--radius-md);
+    margin-top: 10px;
+    cursor: pointer;
+  }
+  .btn-danger-outline:active { background: rgba(255, 107, 107, 0.1); }
+
   .app-hidden { display: none !important; }
 
   .auth-screen {
@@ -1696,7 +1759,7 @@ function renderMealCard(key, label, items) {
     const row = document.createElement('div');
     row.className = 'food-item';
     row.innerHTML = `
-      <div>
+      <div class="food-item-info" data-meal="${key}" data-id="${item.id}">
         <div class="food-item-name">${escapeHtml(item.name)}</div>
         <div class="food-item-detail">${item.grams ? item.grams + ' g · ' : ''}${Math.round(item.kcal)} kcal · P${round1(item.protein)} C${round1(item.carbs)} G${round1(item.fat)}</div>
       </div>
@@ -1764,6 +1827,11 @@ document.getElementById('mealsContainer').addEventListener('click', (e) => {
   const addBtn = e.target.closest('.add-food-btn');
   if (addBtn) {
     openSheet(addBtn.dataset.meal);
+    return;
+  }
+  const infoEl = e.target.closest('.food-item-info');
+  if (infoEl) {
+    openEditItemSheet(infoEl.dataset.meal, infoEl.dataset.id);
   }
 });
 
@@ -1932,6 +2000,98 @@ function renderResults(list, container, isFiltered) {
 }
 
 // ---- Quantity view ----
+// ---- Detalle nutricional compartido (usado al agregar y al editar) ----
+function nutritionDetailHTML() {
+  return `
+    <div class="macro-pct-bar" id="macroPctBar"></div>
+    <div class="macro-pct-legend" id="macroPctLegend"></div>
+    <button type="button" class="nutri-toggle" id="nutriToggleBtn">Información Nutricional <span id="nutriChevron">▾</span></button>
+    <div class="nutri-detail" id="nutriDetail" style="display:none;">
+      <div class="nutri-row">
+        <div class="nutri-row-top"><span>Calorías</span><span><b id="niKcal">0</b> / <span id="niKcalGoal">0</span> kcal</span></div>
+        <div class="progress-bar small"><div class="progress-fill" id="niKcalFill"></div></div>
+      </div>
+      <div class="nutri-row">
+        <div class="nutri-row-top"><span>Grasas Totales</span><span><b id="niFat">0</b> / <span id="niFatGoal">0</span> g</span></div>
+        <div class="progress-bar small"><div class="progress-fill" id="niFatFill"></div></div>
+      </div>
+      <div class="nutri-row nutri-sub">
+        <div class="nutri-row-top"><span>Grasas Saturadas</span><span><b id="niSatFat">0</b> / <span id="niSatFatGoal">0</span> g</span></div>
+        <div class="progress-bar small"><div class="progress-fill" id="niSatFatFill"></div></div>
+      </div>
+      <div class="nutri-row">
+        <div class="nutri-row-top"><span>Carbohidratos</span><span><b id="niCarbs">0</b> / <span id="niCarbsGoal">0</span> g</span></div>
+        <div class="progress-bar small"><div class="progress-fill" id="niCarbsFill"></div></div>
+      </div>
+      <div class="nutri-row nutri-sub">
+        <div class="nutri-row-top"><span>Fibra</span><span><b id="niFiber">0</b> / 30 g</span></div>
+        <div class="progress-bar small"><div class="progress-fill" id="niFiberFill"></div></div>
+      </div>
+      <div class="nutri-row nutri-sub">
+        <div class="nutri-row-top"><span>Azúcares</span><span><b id="niSugar">0</b> / <span id="niSugarGoal">0</span> g</span></div>
+        <div class="progress-bar small"><div class="progress-fill" id="niSugarFill"></div></div>
+      </div>
+      <div class="nutri-row">
+        <div class="nutri-row-top"><span>Proteínas</span><span><b id="niProtein">0</b> / <span id="niProteinGoal">0</span> g</span></div>
+        <div class="progress-bar small"><div class="progress-fill" id="niProteinFill"></div></div>
+      </div>
+      <div class="nutri-row">
+        <div class="nutri-row-top"><span>Sodio</span><span><b id="niSodium">0</b> / 2300 mg</span></div>
+        <div class="progress-bar small"><div class="progress-fill" id="niSodiumFill"></div></div>
+      </div>
+      <div class="result-cat" style="margin-top:2px;">Valores estimados · % respecto a tus metas diarias</div>
+    </div>
+  `;
+}
+
+function wireNutriToggle() {
+  document.getElementById('nutriToggleBtn').addEventListener('click', () => {
+    const detail = document.getElementById('nutriDetail');
+    const chevron = document.getElementById('nutriChevron');
+    const open = detail.style.display !== 'none';
+    detail.style.display = open ? 'none' : 'block';
+    chevron.textContent = open ? '▾' : '▴';
+  });
+}
+
+function updateNutritionDetail(v) {
+  const sugarGoal = Math.round(goals.kcal * 0.10 / 4);
+  const satFatGoal = Math.round(goals.kcal * 0.10 / 9);
+
+  const pKcal = v.protein * 4, cKcal = v.carbs * 4, fKcal = v.fat * 9;
+  const totalKcal = pKcal + cKcal + fKcal || 1;
+  const pPct = Math.round(pKcal / totalKcal * 100);
+  const cPct = Math.round(cKcal / totalKcal * 100);
+  const fPct = Math.max(0, 100 - pPct - cPct);
+  document.getElementById('macroPctBar').innerHTML =
+    `<div style="width:${pPct}%;background:#f5c542;"></div>` +
+    `<div style="width:${cPct}%;background:#6fcf97;"></div>` +
+    `<div style="width:${fPct}%;background:#eb9694;"></div>`;
+  document.getElementById('macroPctLegend').innerHTML =
+    `<span><span class="dot" style="background:#f5c542;"></span>Proteína ${pPct}%</span>` +
+    `<span><span class="dot" style="background:#6fcf97;"></span>Carbos ${cPct}%</span>` +
+    `<span><span class="dot" style="background:#eb9694;"></span>Grasa ${fPct}%</span>`;
+
+  const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setTxt('niKcal', Math.round(v.kcal)); setTxt('niKcalGoal', goals.kcal);
+  setTxt('niFat', round1(v.fat)); setTxt('niFatGoal', goals.fat);
+  setTxt('niSatFat', round1(v.satFat || 0)); setTxt('niSatFatGoal', satFatGoal);
+  setTxt('niCarbs', round1(v.carbs)); setTxt('niCarbsGoal', goals.carbs);
+  setTxt('niFiber', round1(v.fiber || 0));
+  setTxt('niSugar', round1(v.sugar || 0)); setTxt('niSugarGoal', sugarGoal);
+  setTxt('niProtein', round1(v.protein)); setTxt('niProteinGoal', goals.protein);
+  setTxt('niSodium', Math.round(v.sodium || 0));
+
+  setFill('niKcalFill', v.kcal, goals.kcal);
+  setFill('niFatFill', v.fat, goals.fat);
+  setFill('niSatFatFill', v.satFat || 0, satFatGoal);
+  setFill('niCarbsFill', v.carbs, goals.carbs);
+  setFill('niFiberFill', v.fiber || 0, 30);
+  setFill('niSugarFill', v.sugar || 0, sugarGoal);
+  setFill('niProteinFill', v.protein, goals.protein);
+  setFill('niSodiumFill', v.sodium || 0, 2300);
+}
+
 function renderQuantityView() {
   const food = currentSelectedFood;
   sheetTitle.textContent = 'Cantidad';
@@ -1952,17 +2112,31 @@ function renderQuantityView() {
       <div><div class="val" id="pvCarbs">0</div><div class="lbl">Carbs</div></div>
       <div><div class="val" id="pvFat">0</div><div class="lbl">Grasa</div></div>
     </div>
+    ${nutritionDetailHTML()}
     <button class="btn-primary" id="confirmQtyBtn">Agregar</button>
   `;
+
+  wireNutriToggle();
 
   const qtyInput = document.getElementById('qtyInput');
   function updatePreview() {
     const grams = parseFloat(qtyInput.value) || 0;
     const factor = grams / 100;
-    document.getElementById('pvKcal').textContent = Math.round(food.kcal * factor);
-    document.getElementById('pvProtein').textContent = round1(food.protein * factor);
-    document.getElementById('pvCarbs').textContent = round1(food.carbs * factor);
-    document.getElementById('pvFat').textContent = round1(food.fat * factor);
+    const v = {
+      kcal: food.kcal * factor,
+      protein: food.protein * factor,
+      carbs: food.carbs * factor,
+      fat: food.fat * factor,
+      fiber: (food.fiber || 0) * factor,
+      sugar: (food.sugar || 0) * factor,
+      sodium: (food.sodium || 0) * factor,
+      satFat: (food.satFat || 0) * factor,
+    };
+    document.getElementById('pvKcal').textContent = Math.round(v.kcal);
+    document.getElementById('pvProtein').textContent = round1(v.protein);
+    document.getElementById('pvCarbs').textContent = round1(v.carbs);
+    document.getElementById('pvFat').textContent = round1(v.fat);
+    updateNutritionDetail(v);
   }
   qtyInput.addEventListener('input', updatePreview);
   updatePreview();
@@ -2049,6 +2223,160 @@ function addEntry(entry) {
   pushDiaryDayToCloud(key, diary[key]);
   closeSheet();
   renderAll();
+}
+
+// ---- Editar / eliminar un alimento ya registrado ----
+function openEditItemSheet(mealKey, itemId) {
+  const diary = loadDiary();
+  const dayKey = selectedDate;
+  const list = diary[dayKey] && diary[dayKey][mealKey];
+  const item = list && list.find(i => i.id === itemId);
+  if (!item) return;
+
+  currentSheetMeal = mealKey;
+  sheetTitle.textContent = 'Editar alimento';
+  sheetBack.classList.add('hidden');
+
+  const hasGrams = !!item.grams;
+
+  if (hasGrams) {
+    // Alimento con gramaje: guardamos las tasas por 100g para poder
+    // recalcular todo si cambia la cantidad, igual que al agregarlo.
+    const rate100 = {
+      kcal: item.kcal / item.grams * 100,
+      protein: item.protein / item.grams * 100,
+      carbs: item.carbs / item.grams * 100,
+      fat: item.fat / item.grams * 100,
+      fiber: (item.fiber || 0) / item.grams * 100,
+      sugar: (item.sugar || 0) / item.grams * 100,
+      sodium: (item.sodium || 0) / item.grams * 100,
+      satFat: (item.satFat || 0) / item.grams * 100,
+    };
+
+    sheetBody.innerHTML = `
+      <div class="qty-food-name">${escapeHtml(item.name)}</div>
+      <div class="qty-food-per100">${round1(rate100.kcal)} kcal · P${round1(rate100.protein)}g C${round1(rate100.carbs)}g G${round1(rate100.fat)}g (por 100g)</div>
+      <div class="field">
+        <label>Cantidad (gramos)</label>
+        <input type="number" class="form-input" id="editQtyInput" inputmode="decimal" value="${item.grams}" min="0" step="1">
+      </div>
+      <div class="qty-preview">
+        <div><div class="val" id="pvKcal">0</div><div class="lbl">Kcal</div></div>
+        <div><div class="val" id="pvProtein">0</div><div class="lbl">Prot.</div></div>
+        <div><div class="val" id="pvCarbs">0</div><div class="lbl">Carbs</div></div>
+        <div><div class="val" id="pvFat">0</div><div class="lbl">Grasa</div></div>
+      </div>
+      ${nutritionDetailHTML()}
+      <button class="btn-primary" id="confirmEditBtn">Guardar cambios</button>
+      <button type="button" class="btn-danger-outline" id="deleteEditBtn">Eliminar alimento</button>
+    `;
+
+    wireNutriToggle();
+    showOverlay(sheetOverlay);
+
+    const qtyInput = document.getElementById('editQtyInput');
+    function updatePreview() {
+      const grams = parseFloat(qtyInput.value) || 0;
+      const factor = grams / 100;
+      const v = {
+        kcal: rate100.kcal * factor,
+        protein: rate100.protein * factor,
+        carbs: rate100.carbs * factor,
+        fat: rate100.fat * factor,
+        fiber: rate100.fiber * factor,
+        sugar: rate100.sugar * factor,
+        sodium: rate100.sodium * factor,
+        satFat: rate100.satFat * factor,
+      };
+      document.getElementById('pvKcal').textContent = Math.round(v.kcal);
+      document.getElementById('pvProtein').textContent = round1(v.protein);
+      document.getElementById('pvCarbs').textContent = round1(v.carbs);
+      document.getElementById('pvFat').textContent = round1(v.fat);
+      updateNutritionDetail(v);
+    }
+    qtyInput.addEventListener('input', updatePreview);
+    updatePreview();
+
+    document.getElementById('confirmEditBtn').addEventListener('click', () => {
+      const grams = parseFloat(qtyInput.value) || 0;
+      const factor = grams / 100;
+      Object.assign(item, {
+        grams,
+        kcal: rate100.kcal * factor,
+        protein: rate100.protein * factor,
+        carbs: rate100.carbs * factor,
+        fat: rate100.fat * factor,
+        fiber: rate100.fiber * factor,
+        sugar: rate100.sugar * factor,
+        sodium: rate100.sodium * factor,
+        satFat: rate100.satFat * factor,
+      });
+      saveDiary(diary);
+      pushDiaryDayToCloud(dayKey, diary[dayKey]);
+      closeSheet();
+      renderAll();
+    });
+  } else {
+    // Ingreso manual: no hay tasa por 100g, se editan los valores directos.
+    sheetBody.innerHTML = `
+      <div class="field">
+        <label>Nombre del alimento</label>
+        <input type="text" class="form-input" id="editName" value="${escapeHtml(item.name)}" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Cantidad (g, opcional)</label>
+        <input type="number" class="form-input" id="editGrams" inputmode="decimal" value="${item.grams || ''}" min="0">
+      </div>
+      <div class="field">
+        <label>Calorías (kcal)</label>
+        <input type="number" class="form-input" id="editKcal" inputmode="decimal" value="${Math.round(item.kcal)}" min="0">
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Proteína (g)</label>
+          <input type="number" class="form-input" id="editProtein" inputmode="decimal" value="${round1(item.protein)}" min="0">
+        </div>
+        <div class="field">
+          <label>Carbohidratos (g)</label>
+          <input type="number" class="form-input" id="editCarbs" inputmode="decimal" value="${round1(item.carbs)}" min="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>Grasas (g)</label>
+        <input type="number" class="form-input" id="editFat" inputmode="decimal" value="${round1(item.fat)}" min="0">
+      </div>
+      <button class="btn-primary" id="confirmEditBtn">Guardar cambios</button>
+      <button type="button" class="btn-danger-outline" id="deleteEditBtn">Eliminar alimento</button>
+    `;
+
+    showOverlay(sheetOverlay);
+    setTimeout(() => document.getElementById('editName').focus(), 250);
+
+    document.getElementById('confirmEditBtn').addEventListener('click', () => {
+      const name = document.getElementById('editName').value.trim();
+      if (!name) { document.getElementById('editName').focus(); return; }
+      Object.assign(item, {
+        name,
+        grams: parseFloat(document.getElementById('editGrams').value) || null,
+        kcal: parseFloat(document.getElementById('editKcal').value) || 0,
+        protein: parseFloat(document.getElementById('editProtein').value) || 0,
+        carbs: parseFloat(document.getElementById('editCarbs').value) || 0,
+        fat: parseFloat(document.getElementById('editFat').value) || 0,
+      });
+      saveDiary(diary);
+      pushDiaryDayToCloud(dayKey, diary[dayKey]);
+      closeSheet();
+      renderAll();
+    });
+  }
+
+  document.getElementById('deleteEditBtn').addEventListener('click', () => {
+    diary[dayKey][mealKey] = diary[dayKey][mealKey].filter(i => i.id !== itemId);
+    saveDiary(diary);
+    pushDiaryDayToCloud(dayKey, diary[dayKey]);
+    closeSheet();
+    renderAll();
+  });
 }
 
 // ---------- Settings ----------
