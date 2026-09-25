@@ -812,7 +812,7 @@
 // ---------- Firebase (login + sincronización en la nube) ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult,
+  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   sendPasswordResetEmail, onAuthStateChanged, signOut,
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
@@ -2129,9 +2129,24 @@ document.getElementById('authForgotBtn').addEventListener('click', async () => {
 
 document.getElementById('googleSignInBtn').addEventListener('click', async () => {
   clearAuthError();
+  const provider = new GoogleAuthProvider();
   try {
-    await signInWithRedirect(auth, new GoogleAuthProvider());
+    // La ventana emergente es más confiable que la redirección en Safari:
+    // iOS bloquea la "memoria" que Firebase necesita para completar el
+    // inicio de sesión al volver de la redirección de Google.
+    await signInWithPopup(auth, provider);
   } catch (err) {
+    if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+      return; // el usuario cerró la ventana, no es un error real
+    }
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      try {
+        await signInWithRedirect(auth, provider);
+      } catch (err2) {
+        showAuthError(translateAuthError(err2.code));
+      }
+      return;
+    }
     showAuthError(translateAuthError(err.code));
   }
 });
