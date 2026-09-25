@@ -581,12 +581,117 @@
   .week-day .wdot.has { background: var(--gold-dim); }
   .week-day.selected .wdot.has { background: var(--gold); }
 
+  .app-hidden { display: none !important; }
+
+  .auth-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(28px + var(--safe-top)) 20px calc(28px + var(--safe-bottom));
+    overflow-y: auto;
+  }
+  .auth-screen.hidden { display: none; }
+  .auth-content { width: 100%; max-width: 420px; margin: 0 auto; }
+  .auth-hero {
+    width: 100%;
+    aspect-ratio: 16/10;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    margin-bottom: 22px;
+    display: block;
+  }
+  .auth-title { font-size: 28px; font-weight: 800; text-align: center; margin: 0 0 6px; }
+  .auth-subtitle { text-align: center; color: var(--text-dim); font-size: 14px; margin: 0 0 24px; line-height: 1.5; }
+  .auth-error {
+    background: rgba(255, 107, 107, 0.12);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    color: var(--danger);
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 14px;
+    display: none;
+    text-align: center;
+  }
+  .auth-error.show { display: block; }
+  .btn-google {
+    width: 100%;
+    background: #fff;
+    color: #1a1a1a;
+    border: none;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .btn-google:active { background: #eee; }
+  .auth-divider {
+    display: flex;
+    align-items: center;
+    color: var(--text-faint);
+    font-size: 12px;
+    margin: 18px 0;
+  }
+  .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .auth-divider span { padding: 0 12px; }
+  .auth-toggle { text-align: center; margin-top: 18px; font-size: 13.5px; color: var(--text-dim); }
+  .auth-link {
+    background: none;
+    border: none;
+    color: var(--gold);
+    font-weight: 700;
+    font-size: 13.5px;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .auth-forgot { display: block; margin: 10px auto 0; }
+
   ::selection { background: var(--gold-dim); color: #000; }
 </style>
 </head>
 <body>
 
-<div id="app">
+<div id="authScreen" class="auth-screen">
+  <div class="auth-content">
+    <img class="auth-hero" src="images/hero-bowl.jpg" alt="">
+    <h1 class="auth-title">Mi Nutrición</h1>
+    <p class="auth-subtitle">Cada persona de la familia con su propia cuenta y su comida registrada, en privado.</p>
+
+    <div class="auth-error" id="authError"></div>
+
+    <button class="btn-google" id="googleSignInBtn">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.83.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.95 10.7A5.4 5.4 0 0 1 3.67 9c0-.59.1-1.17.28-1.7V4.96H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.04l2.99-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96L3.95 7.3C4.66 5.17 6.65 3.58 9 3.58z"/></svg>
+      Continuar con Google
+    </button>
+
+    <div class="auth-divider"><span>o con tu correo</span></div>
+
+    <div class="field">
+      <input class="form-input" type="email" id="authEmail" placeholder="Correo electrónico" autocomplete="email">
+    </div>
+    <div class="field">
+      <input class="form-input" type="password" id="authPassword" placeholder="Contraseña" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="authSubmitBtn" style="margin-top:4px;">Iniciar sesión</button>
+    <button class="auth-link auth-forgot" id="authForgotBtn">¿Olvidaste tu contraseña?</button>
+
+    <div class="auth-toggle">
+      <span id="authToggleText">¿No tienes cuenta?</span>
+      <button class="auth-link" id="authToggleBtn">Crear una</button>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="app-hidden">
   <header class="topbar">
     <div>
       <h1 id="hoyTitle" role="button">Hoy</h1>
@@ -679,6 +784,11 @@
         <input class="form-input" type="number" inputmode="numeric" id="goalFat" min="0">
       </div>
       <button class="btn-primary" id="saveSettingsBtn">Guardar</button>
+
+      <div style="margin-top:26px;padding-top:16px;border-top:1px solid var(--border);">
+        <div id="authUserInfo" style="text-align:center;color:var(--text-faint);font-size:12.5px;margin-bottom:10px;"></div>
+        <button class="quick-manual-btn" id="signOutBtn" style="justify-content:center;color:var(--danger);">🚪 &nbsp; Cerrar sesión</button>
+      </div>
     </div>
   </div>
 </div>
@@ -698,7 +808,33 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+// ---------- Firebase (login + sincronización en la nube) ----------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  sendPasswordResetEmail, onAuthStateChanged, signOut,
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache,
+  doc, getDoc, setDoc, collection, getDocs,
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCWUYY9_5IQuV22q1ij6ttX91sFHIcZwTI",
+  authDomain: "grupo-reyes-nutricion.firebaseapp.com",
+  projectId: "grupo-reyes-nutricion",
+  storageBucket: "grupo-reyes-nutricion.firebasestorage.app",
+  messagingSenderId: "657872571623",
+  appId: "1:657872571623:web:aa02ac3dcae62b065da642",
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = initializeFirestore(fbApp, { localCache: persistentLocalCache() });
+let currentUid = null;
+
 // ---------- Base de datos local de alimentos (valores aproximados por 100g) ----------
 const FOODS = [
   // ---- Proteínas: pollo ----
@@ -945,11 +1081,20 @@ const MEAL_STRUCTURES = {
 const ALL_MEAL_LABELS = { desayuno: 'Desayuno', almuerzo: 'Almuerzo', cena: 'Cena', snacks: 'Snacks', omad: 'OMAD' };
 const ALL_MEAL_KEYS = Object.keys(ALL_MEAL_LABELS);
 
+// Cada usuario logueado tiene su propio espacio en localStorage (para que
+// varias personas puedan compartir el mismo celular sin mezclar datos) y
+// además se respalda en Firestore para que la misma cuenta se vea igual
+// en cualquier dispositivo.
+function storageKey(base) { return currentUid ? `${base}.${currentUid}` : base; }
+
 function loadMealStructure() {
-  const v = localStorage.getItem(STORAGE_MEAL_STRUCTURE);
+  const v = localStorage.getItem(storageKey(STORAGE_MEAL_STRUCTURE));
   return v === 'omad' ? 'omad' : 'classic';
 }
-function saveMealStructure(v) { localStorage.setItem(STORAGE_MEAL_STRUCTURE, v); }
+function saveMealStructure(v) {
+  localStorage.setItem(storageKey(STORAGE_MEAL_STRUCTURE), v);
+  pushSettingsToCloud();
+}
 function getCurrentMeals() { return MEAL_STRUCTURES[mealStructure]; }
 
 function dateKey(d) {
@@ -963,28 +1108,104 @@ function todayKey() { return dateKey(new Date()); }
 
 function loadSettings() {
   try {
-    const raw = localStorage.getItem(STORAGE_SETTINGS);
+    const raw = localStorage.getItem(storageKey(STORAGE_SETTINGS));
     return raw ? JSON.parse(raw) : null;
   } catch (e) { return null; }
 }
 
 function saveSettings(goals) {
-  localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(goals));
+  localStorage.setItem(storageKey(STORAGE_SETTINGS), JSON.stringify(goals));
+  pushSettingsToCloud();
+}
+
+function loadProfile() {
+  try {
+    const raw = localStorage.getItem(storageKey(STORAGE_PROFILE));
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
 }
 
 function saveProfile(profile) {
-  localStorage.setItem(STORAGE_PROFILE, JSON.stringify(profile));
+  localStorage.setItem(storageKey(STORAGE_PROFILE), JSON.stringify(profile));
+  if (currentUid) {
+    setDoc(doc(db, 'users', currentUid), { profile }, { merge: true }).catch(() => {});
+  }
 }
 
 function loadDiary() {
   try {
-    const raw = localStorage.getItem(STORAGE_DIARY);
+    const raw = localStorage.getItem(storageKey(STORAGE_DIARY));
     return raw ? JSON.parse(raw) : {};
   } catch (e) { return {}; }
 }
 
 function saveDiary(diary) {
-  localStorage.setItem(STORAGE_DIARY, JSON.stringify(diary));
+  localStorage.setItem(storageKey(STORAGE_DIARY), JSON.stringify(diary));
+}
+
+// ---------- Sincronización con Firestore ----------
+function pushSettingsToCloud() {
+  if (!currentUid) return;
+  setDoc(doc(db, 'users', currentUid), { goals, mealStructure }, { merge: true }).catch(() => {});
+}
+
+function pushDiaryDayToCloud(key, entries) {
+  if (!currentUid) return;
+  setDoc(doc(db, 'users', currentUid, 'diary', key), entries).catch(() => {});
+}
+
+// Trae los datos de la cuenta desde la nube al iniciar sesión. Si es la
+// primera vez que esta cuenta se usa (no hay documento en la nube todavía)
+// y este dispositivo tenía datos de prueba sin cuenta, se los "adopta" una
+// sola vez y luego los borra de ahí para que no se los quede otra persona
+// que inicie sesión en el mismo celular después.
+async function pullFromCloud(uid) {
+  const userRef = doc(db, 'users', uid);
+  const snap = await getDoc(userRef);
+
+  if (snap.exists()) {
+    const data = snap.data();
+    if (data.goals) localStorage.setItem(storageKey(STORAGE_SETTINGS), JSON.stringify(data.goals));
+    else localStorage.removeItem(storageKey(STORAGE_SETTINGS));
+    if (data.profile) localStorage.setItem(storageKey(STORAGE_PROFILE), JSON.stringify(data.profile));
+    localStorage.setItem(storageKey(STORAGE_MEAL_STRUCTURE), data.mealStructure || 'classic');
+
+    const diarySnap = await getDocs(collection(db, 'users', uid, 'diary'));
+    const diary = {};
+    diarySnap.forEach(d => { diary[d.id] = d.data(); });
+    localStorage.setItem(storageKey(STORAGE_DIARY), JSON.stringify(diary));
+    return;
+  }
+
+  // Cuenta nueva en la nube: adopta datos de prueba locales sin dueño, si hay.
+  const legacySettings = localStorage.getItem(STORAGE_SETTINGS);
+  const legacyProfile = localStorage.getItem(STORAGE_PROFILE);
+  const legacyMealStructure = localStorage.getItem(STORAGE_MEAL_STRUCTURE);
+  const legacyDiaryRaw = localStorage.getItem(STORAGE_DIARY);
+
+  const seedDoc = { mealStructure: legacyMealStructure || 'classic' };
+  if (legacySettings) seedDoc.goals = JSON.parse(legacySettings);
+  if (legacyProfile) seedDoc.profile = JSON.parse(legacyProfile);
+  await setDoc(userRef, seedDoc);
+
+  if (seedDoc.goals) localStorage.setItem(storageKey(STORAGE_SETTINGS), JSON.stringify(seedDoc.goals));
+  if (seedDoc.profile) localStorage.setItem(storageKey(STORAGE_PROFILE), JSON.stringify(seedDoc.profile));
+  localStorage.setItem(storageKey(STORAGE_MEAL_STRUCTURE), seedDoc.mealStructure);
+
+  if (legacyDiaryRaw) {
+    const legacyDiary = JSON.parse(legacyDiaryRaw);
+    localStorage.setItem(storageKey(STORAGE_DIARY), JSON.stringify(legacyDiary));
+    for (const day of Object.keys(legacyDiary)) {
+      await setDoc(doc(db, 'users', uid, 'diary', day), legacyDiary[day]).catch(() => {});
+    }
+  } else {
+    localStorage.setItem(storageKey(STORAGE_DIARY), JSON.stringify({}));
+  }
+
+  localStorage.removeItem(STORAGE_SETTINGS);
+  localStorage.removeItem(STORAGE_PROFILE);
+  localStorage.removeItem(STORAGE_MEAL_STRUCTURE);
+  localStorage.removeItem(STORAGE_DIARY);
 }
 
 function ensureMealKeys(entries) {
@@ -1200,6 +1421,7 @@ document.getElementById('mealsContainer').addEventListener('click', (e) => {
     const id = delBtn.dataset.id;
     diary[key][mealKey] = diary[key][mealKey].filter(i => i.id !== id);
     saveDiary(diary);
+    pushDiaryDayToCloud(key, diary[key]);
     renderAll();
     return;
   }
@@ -1483,6 +1705,7 @@ function addEntry(entry) {
   ensureMealKeys(diary[key]);
   diary[key][currentSheetMeal].push(entry);
   saveDiary(diary);
+  pushDiaryDayToCloud(key, diary[key]);
   closeSheet();
   renderAll();
 }
@@ -1834,11 +2057,123 @@ function renderCalcResultado() {
   });
 }
 
-// ---------- Init ----------
-renderAll();
-if (!loadSettings()) {
-  openCalcWizard();
+// ---------- Autenticación ----------
+const authScreenEl = document.getElementById('authScreen');
+const appRootEl = document.getElementById('app');
+let isSignupMode = false;
+
+function showAuthError(msg, isInfo) {
+  const el = document.getElementById('authError');
+  el.textContent = msg;
+  el.style.color = isInfo ? 'var(--gold)' : 'var(--danger)';
+  el.classList.add('show');
 }
+function clearAuthError() {
+  document.getElementById('authError').classList.remove('show');
+}
+
+const AUTH_ERROR_MESSAGES = {
+  'auth/invalid-email': 'Correo inválido.',
+  'auth/user-not-found': 'No existe una cuenta con ese correo.',
+  'auth/wrong-password': 'Contraseña incorrecta.',
+  'auth/invalid-credential': 'Correo o contraseña incorrectos.',
+  'auth/email-already-in-use': 'Ya existe una cuenta con ese correo. Inicia sesión.',
+  'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
+  'auth/too-many-requests': 'Demasiados intentos. Espera un momento e intenta de nuevo.',
+  'auth/popup-closed-by-user': 'Cerraste la ventana antes de terminar.',
+  'auth/network-request-failed': 'Sin conexión a internet.',
+};
+function translateAuthError(code) {
+  return AUTH_ERROR_MESSAGES[code] || 'Ocurrió un error. Intenta de nuevo.';
+}
+
+document.getElementById('authToggleBtn').addEventListener('click', () => {
+  isSignupMode = !isSignupMode;
+  document.getElementById('authSubmitBtn').textContent = isSignupMode ? 'Crear cuenta' : 'Iniciar sesión';
+  document.getElementById('authToggleText').textContent = isSignupMode ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?';
+  document.getElementById('authToggleBtn').textContent = isSignupMode ? 'Iniciar sesión' : 'Crear una';
+  clearAuthError();
+});
+
+document.getElementById('authSubmitBtn').addEventListener('click', async () => {
+  clearAuthError();
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  if (!email || !password) { showAuthError('Completa correo y contraseña.'); return; }
+  const btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true;
+  try {
+    if (isSignupMode) {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+    }
+  } catch (err) {
+    showAuthError(translateAuthError(err.code));
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('authForgotBtn').addEventListener('click', async () => {
+  clearAuthError();
+  const email = document.getElementById('authEmail').value.trim();
+  if (!email) { showAuthError('Escribe tu correo arriba y luego toca este botón.'); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showAuthError('Te enviamos un correo para restablecer tu contraseña.', true);
+  } catch (err) {
+    showAuthError(translateAuthError(err.code));
+  }
+});
+
+document.getElementById('googleSignInBtn').addEventListener('click', async () => {
+  clearAuthError();
+  try {
+    await signInWithRedirect(auth, new GoogleAuthProvider());
+  } catch (err) {
+    showAuthError(translateAuthError(err.code));
+  }
+});
+
+document.getElementById('signOutBtn').addEventListener('click', () => {
+  if (confirm('¿Cerrar sesión? Tus datos ya están guardados en la nube.')) {
+    hideOverlay(settingsOverlay);
+    signOut(auth);
+  }
+});
+
+getRedirectResult(auth).catch((err) => {
+  if (err && err.code) showAuthError(translateAuthError(err.code));
+});
+
+let authReady = false;
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUid = user.uid;
+    try {
+      await pullFromCloud(currentUid);
+    } catch (e) {
+      console.error('Error sincronizando con la nube:', e);
+    }
+    goals = loadSettings() || { ...DEFAULT_GOALS };
+    mealStructure = loadMealStructure();
+    selectedDate = todayKey();
+    weekAnchor = new Date();
+    document.getElementById('authUserInfo').textContent = 'Sesión: ' + (user.email || user.displayName || '');
+    authScreenEl.classList.add('hidden');
+    appRootEl.classList.remove('app-hidden');
+    renderAll();
+    if (!loadSettings()) {
+      openCalcWizard();
+    }
+  } else {
+    currentUid = null;
+    appRootEl.classList.add('app-hidden');
+    authScreenEl.classList.remove('hidden');
+  }
+  authReady = true;
+});
 
 // ---------- Service worker ----------
 if ('serviceWorker' in navigator) {
